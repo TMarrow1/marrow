@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Marrow Electric — Job Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1A2B3C;
+  --navy-mid: #243648;
+  --navy-light: #2E4458;
+  --amber: #E8A020;
+  --amber-dim: #C4881A;
+  --amber-bg: #FFF8E7;
+  --green: #2D6A4F;
+  --green-bg: #EBF7EF;
+  --red: #C0392B;
+  --red-bg: #FDECEA;
+  --blue: #1A5FA5;
+  --blue-bg: #E6F1FB;
+  --bg: #F4F5F7;
+  --surface: #FFFFFF;
+  --surface2: #F8F9FA;
+  --border: #E2E5E9;
+  --border2: #CDD1D6;
+  --text: #1A2B3C;
+  --text2: #4A5568;
+  --text3: #8A9BB0;
+  --shadow: 0 1px 3px rgba(26,43,60,.08), 0 4px 12px rgba(26,43,60,.04);
+  --shadow-md: 0 4px 16px rgba(26,43,60,.12), 0 1px 4px rgba(26,43,60,.06);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+/* ── TOP BAR ── */
+.topbar { background: var(--navy); padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 40; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.topbar-logo { display: flex; align-items: center; gap: 8px; }
+.logo-mark { width: 28px; height: 28px; background: var(--amber); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-mark svg { width: 16px; height: 16px; }
+.logo-text { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: .02em; }
+.logo-sub { font-size: 11px; color: rgba(255,255,255,.45); font-family: 'DM Mono', monospace; margin-left: 2px; }
+.topbar-gap { flex: 1; }
+.sync-status { font-size: 11px; font-family: 'DM Mono', monospace; padding: 3px 8px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sync-ok { background: rgba(45,106,79,.3); color: #7DCEA0; }
+.sync-ok .sync-dot { background: #7DCEA0; }
+.sync-err { background: rgba(192,57,43,.3); color: #F1948A; }
+.sync-err .sync-dot { background: #F1948A; }
+.sync-pending { background: rgba(232,160,32,.25); color: var(--amber); }
+.sync-pending .sync-dot { background: var(--amber); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── NAV TABS ── */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 12px; position: sticky; top: 52px; z-index: 39; }
+.nav::-webkit-scrollbar { display: none; }
+.nav-tab { padding: 12px 14px; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all .15s; flex-shrink: 0; }
+.nav-tab.active { color: var(--navy); border-bottom-color: var(--amber); }
+.nav-tab:hover:not(.active) { color: var(--text2); }
+
+/* ── MAIN ── */
+.main { padding: 14px 12px; max-width: 900px; margin: 0 auto; }
+
+/* ── SECTION LABEL ── */
+.section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin: 16px 0 8px; }
+.section-label:first-child { margin-top: 0; }
+
+/* ── LANE SCROLL ── */
+.lane-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+.lane-scroll::-webkit-scrollbar { display: none; }
+.lane { flex: 0 0 170px; min-width: 170px; }
+.lane-head { background: var(--navy); color: rgba(255,255,255,.8); font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: space-between; }
+.lane-count { background: rgba(255,255,255,.15); color: rgba(255,255,255,.7); font-size: 10px; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 10px; }
+.lane-body { background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 6px; min-height: 60px; }
+
+/* ── CARDS ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 6px; cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+.card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+.card:last-child { margin-bottom: 0; }
+.card-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; line-height: 1.35; }
+.card-next { font-size: 11px; color: var(--text2); margin-bottom: 6px; line-height: 1.4; }
+.card-meta { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-g { background: #27AE60; }
+.dot-a { background: var(--amber); }
+.dot-r { background: var(--red); }
+.badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500; font-family: 'DM Mono', monospace; white-space: nowrap; }
+.badge-val { background: var(--green-bg); color: var(--green); }
+.badge-age { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+.badge-blk { background: var(--red-bg); color: var(--red); }
+.badge-mat { background: var(--blue-bg); color: var(--blue); cursor: pointer; }
+.badge-mat-done { background: var(--green-bg); color: var(--green); }
+
+/* ── STALLED GRID ── */
+.stalled-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.stalled-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; cursor: pointer; opacity: .65; transition: opacity .12s, border-color .12s; }
+.stalled-card:hover { opacity: 1; border-color: var(--border2); }
+
+/* ── DIVIDER ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ── FAB ── */
+.fab-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.fab { padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .12s; }
+.fab:hover { background: var(--surface2); border-color: var(--border2); }
+.fab-primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+.fab-primary:hover { background: var(--navy-mid); }
+.fab-amber { background: var(--amber); color: var(--navy); border-color: var(--amber-dim); font-weight: 600; }
+.fab-amber:hover { background: var(--amber-dim); }
+
+/* ── MODAL ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(26,43,60,.5); z-index: 100; align-items: flex-end; justify-content: center; padding: 0; }
+@media(min-width:600px) { .modal-bg { align-items: center; padding: 20px; } }
+.modal-bg.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 16px; box-shadow: var(--shadow-md); }
+@media(min-width:600px) { .modal { border-radius: var(--radius); max-width: 400px; max-height: 85vh; } }
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 16px; }
+@media(min-width:600px) { .modal-handle { display: none; } }
+.modal h2 { font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+.modal h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin: 14px 0 6px; }
+.field-label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 4px; margin-top: 12px; }
+.field-input { width: 100%; font-size: 14px; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; transition: border-color .12s; }
+.field-input:focus { outline: none; border-color: var(--navy); }
+select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238A9BB0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+.btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); transition: all .12s; }
+.btn-save { background: var(--navy); color: #fff; border-color: var(--navy); }
+.btn-save:hover { background: var(--navy-mid); }
+.btn-cancel { background: transparent; color: var(--text2); }
+.btn-cancel:hover { background: var(--surface2); }
+.btn-advance { width: 100%; margin-top: 8px; padding: 9px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; text-align: center; }
+.btn-advance:hover { background: var(--surface2); }
+.btn-delete { width: 100%; margin-top: 5px; padding: 8px; font-size: 12px; border-radius: var(--radius-sm); border: 1px solid #F5C6C2; background: transparent; color: var(--red); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ── MAT LIST ── */
+.mat-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.mat-item:last-child { border-bottom: none; }
+.mat-check { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+.mat-text { flex: 1; font-size: 13px; color: var(--text); }
+.mat-text.done { text-decoration: line-through; color: var(--text3); }
+.mat-del { font-size: 18px; color: var(--text3); cursor: pointer; padding: 0 4px; line-height: 1; }
+.mat-del:hover { color: var(--red); }
+.mat-add-row { display: flex; gap: 6px; margin-top: 10px; }
+.mat-add-row .field-input { flex: 1; }
+.btn-add-mat { padding: 9px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.btn-add-mat:hover { background: var(--border); }
+
+/* ── ORDER VIEW ── */
+.order-summary-bar { background: var(--green-bg); border: 1px solid #A8D5B8; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--green); font-weight: 500; margin-bottom: 14px; }
+.order-job { margin-bottom: 14px; }
+.order-job-name { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.order-stage-tag { font-size: 10px; font-weight: 400; color: var(--text3); font-family: 'DM Mono', monospace; }
+.order-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); }
+.order-item:last-child { border-bottom: none; }
+.order-item input[type=checkbox] { width: 15px; height: 15px; flex-shrink: 0; accent-color: var(--green); cursor: pointer; }
+.order-item-text.done { text-decoration: line-through; color: var(--text3); }
+.empty-state { text-align: center; padding: 32px 16px; color: var(--text3); font-size: 13px; }
+.empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+/* ── GUIDE VIEW ── */
+.guide-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+.guide-head { padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.guide-emoji { font-size: 20px; flex-shrink: 0; }
+.guide-title { font-size: 14px; font-weight: 600; color: var(--navy); flex: 1; }
+.guide-subtitle { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.guide-arrow { font-size: 12px; color: var(--text3); transition: transform .2s; }
+.guide-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+.guide-body.open { display: block; }
+.guide-body p { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 10px 0; }
+.guide-body ul { padding-left: 18px; }
+.guide-body li { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 4px 0; }
+.guide-callout { border-radius: var(--radius-sm); padding: 10px 12px; margin: 10px 0; font-size: 13px; line-height: 1.55; }
+.callout-amber { background: var(--amber-bg); border-left: 3px solid var(--amber); color: #7D4E00; }
+.callout-green { background: var(--green-bg); border-left: 3px solid var(--green); color: #1B4332; }
+.guide-step { display: flex; gap: 10px; margin: 6px 0; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-text { font-size: 13px; color: var(--text2); line-height: 1.55; flex: 1; }
+
+/* ── WEEKLY RHYTHM ── */
+.rhythm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; display: flex; gap: 14px; align-items: flex-start; }
+.rhythm-day { font-size: 11px; font-weight: 600; color: var(--amber); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .05em; min-width: 70px; padding-top: 2px; }
+.rhythm-content { flex: 1; }
+.rhythm-title { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 3px; }
+.rhythm-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.rhythm-time { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); margin-top: 4px; }
+
+/* ── SETTINGS ── */
+.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+.settings-card h3 { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
+.settings-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.settings-row label { font-size: 12px; color: var(--text2); flex: 1; }
+.settings-row .field-input { width: 160px; flex-shrink: 0; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 20px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" fill="#1A2B3C"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">Marrow Electric</div>
+    </div>
+  </div>
+  <div class="topbar-gap"></div>
+  <div class="sync-status sync-ok" id="sync-status">
+    <div class="sync-dot"></div>
+    <span id="sync-text">Synced</span>
+  </div>
+</div>
+
+<div class="nav" id="main-nav">
+  <div class="nav-tab active" onclick="showView('pipeline')">Pipeline</div>
+  <div class="nav-tab" onclick="showView('orders')">Order List</div>
+  <div class="nav-tab" onclick="showView('guide')">Field Guide</div>
+  <div class="nav-tab" onclick="showView('rhythm')">Weekly Rhythm</div>
+  <div class="nav-tab" onclick="showView('settings')">Settings</div>
+</div>
+
+<div class="main">
+  <!-- PIPELINE -->
+  <div id="view-pipeline">
+    <div class="fab-row">
+      <button class="fab fab-primary" onclick="openAdd('lead')">+ Lead</button>
+      <button class="fab fab-primary" onclick="openAdd('job')">+ Job</button>
+      <button class="fab" onclick="setFilter('all')" id="f-all">All</button>
+      <button class="fab" onclick="setFilter('leads')" id="f-leads">Leads</button>
+      <button class="fab" onclick="setFilter('jobs')" id="f-jobs">Jobs</button>
+    </div>
+    <div id="board-root"></div>
+  </div>
+
+  <!-- ORDER LIST -->
+  <div id="view-orders" style="display:none">
+    <div id="order-root"></div>
+  </div>
+
+  <!-- FIELD GUIDE -->
+  <div id="view-guide" style="display:none">
+    <div id="guide-root"></div>
+  </div>
+
+  <!-- WEEKLY RHYTHM -->
+  <div id="view-rhythm" style="display:none">
+    <div id="rhythm-root"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="view-settings" style="display:none">
+    <div id="settings-root"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-inner"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SHEET_ID = '1mmEFnVmZc0z790S_xyCITkKOTaEgLN2ckLAihyUV_rE';
+const API_KEY  = 'AIzaSyB7XFQtKXui2XpHu8vHS2AFbtEHcShUW2Y';
+const JOBS_RANGE = 'Jobs!A2:K';
+const MATS_RANGE = 'Materials!A2:E';
+
+// ── STAGES ────────────────────────────────────────────────────────────────────
+const LEAD_STAGES = ['Lead','Site visit','Estimating','Bid sent'];
+const JOB_STAGES  = ['Deposit received','Scheduled','Rough in','Trim','Punch list','Complete'];
+const STALL       = ['Waiting on client','Waiting on inspection','Waiting on permit','Waiting on material','On hold'];
+const ALL_STAGES  = [...LEAD_STAGES,...STALL,...JOB_STAGES];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let jobs = [], filter = 'all', editingId = null, matJobId = null, nextId = 1, syncTimer = null;
+
+// ── LOCAL STORAGE ─────────────────────────────────────────────────────────────
+function saveLocal() {
+  localStorage.setItem('me_jobs', JSON.stringify(jobs));
+  localStorage.setItem('me_nextid', nextId);
+}
+function loadLocal() {
+  const d = localStorage.getItem('me_jobs');
+  if (d) { jobs = JSON.parse(d); nextId = parseInt(localStorage.getItem('me_nextid') || '1'); }
+  else { jobs = getSampleJobs(); nextId = 20; saveLocal(); }
+}
+
+function getSampleJobs() {
+  return [
+    {id:1,type:'lead',name:'Henderson – kitchen remodel',stage:'Lead',next:'Call back re: scope',blocker:'',value:3200,days:2,mats:[]},
+    {id:2,type:'lead',name:'Ortiz – garage subpanel',stage:'Site visit',next:'Schedule site visit',blocker:'',value:1800,days:5,mats:[]},
+    {id:3,type:'lead',name:'Crestwood Apartments',stage:'Estimating',next:'Finish estimate',blocker:'',value:12000,days:8,mats:[]},
+    {id:4,type:'lead',name:'Murphy – EV charger',stage:'Bid sent',next:'Follow up call',blocker:'',value:950,days:3,mats:[]},
+    {id:5,type:'job',name:'Taylor – service upgrade',stage:'Deposit received',next:'Order panel & meter base',blocker:'',value:4800,days:1,mats:[{id:'m1',text:'200A panel',ordered:false},{id:'m2',text:'Meter base',ordered:false}]},
+    {id:6,type:'job',name:'Riverside office TI',stage:'Rough in',next:'Finish home runs to panel',blocker:'',value:18500,days:12,mats:[{id:'m4',text:'12/2 NM 250ft',ordered:true},{id:'m5',text:'1" EMT 50ft',ordered:false}]},
+    {id:7,type:'job',name:'Chen – bathroom circuits',stage:'Trim',next:'Install devices & covers',blocker:'',value:2200,days:4,mats:[{id:'m7',text:'GFCI outlets x3',ordered:true}]},
+    {id:8,type:'job',name:'Patel – whole house reno',stage:'Waiting on client',next:'Client to confirm scope change',blocker:'Waiting on client',value:22000,days:38,mats:[]},
+    {id:9,type:'job',name:'Old Elm St rental',stage:'Waiting on permit',next:'Permit should be ready this week',blocker:'Waiting on permit',value:6500,days:18,mats:[{id:'m9',text:'100A subpanel',ordered:false}]},
+    {id:10,type:'job',name:'Garcia – panel & circuits',stage:'Punch list',next:'Fix 2 open grounds, add cover',blocker:'',value:5100,days:6,mats:[{id:'m11',text:'Cover plates x4',ordered:false}]},
+  ];
+}
+
+// ── GOOGLE SHEETS SYNC ────────────────────────────────────────────────────────
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  const txt = document.getElementById('sync-text');
+  el.className = 'sync-status sync-' + state;
+  txt.textContent = msg;
+}
+
+async function syncToSheets() {
+  setSyncStatus('pending', 'Saving...');
+  try {
+    // Write jobs
+    const jobRows = jobs.map(j => [j.id, j.type, j.name, j.stage, j.next||'', j.blocker||'', j.value||0, j.days||0, '', '', '']);
+    // Write materials as separate rows
+    const matRows = [];
+    jobs.forEach(j => { (j.mats||[]).forEach(m => matRows.push([j.id, m.id, m.text, m.ordered?'TRUE':'FALSE', ''])); });
+
+    // Clear and rewrite jobs
+    await gSheetsClear(JOBS_RANGE);
+    if (jobRows.length) await gSheetsWrite('Jobs!A2', jobRows);
+
+    // Clear and rewrite materials
+    await gSheetsClear(MATS_RANGE);
+    if (matRows.length) await gSheetsWrite('Materials!A2', matRows);
+
+    setSyncStatus('ok', 'Synced');
+  } catch(e) {
+    setSyncStatus('err', 'Offline');
+    console.warn('Sheets sync failed:', e);
+  }
+}
+
+async function gSheetsClear(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:clear?key=${API_KEY}`;
+  const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+  if (!r.ok) throw new Error('Clear failed');
+}
+
+async function gSheetsWrite(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW&key=${API_KEY}`;
+  const r = await fetch(url, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ range, majorDimension: 'ROWS', values }) });
+  if (!r.ok) throw new Error('Write failed');
+}
+
+async function loadFromSheets() {
+  setSyncStatus('pending', 'Loading...');
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(JOBS_RANGE)}?key=${API_KEY}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Load failed');
+    const data = await r.json();
+    const rows = data.values || [];
+
+    const mUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(MATS_RANGE)}?key=${API_KEY}`;
+    const mR = await fetch(mUrl);
+    const mData = await mR.json();
+    const mRows = mData.values || [];
+
+    if (rows.length) {
+      jobs = rows.map(r => ({
+        id: parseInt(r[0])||0, type: r[1]||'job', name: r[2]||'', stage: r[3]||'Lead',
+        next: r[4]||'', blocker: r[5]||'', value: parseInt(r[6])||0, days: parseInt(r[7])||0, mats: []
+      }));
+      // Attach materials
+      mRows.forEach(m => {
+        const j = jobs.find(j => j.id === parseInt(m[0]));
+        if (j) j.mats.push({ id: m[1], text: m[2]||'', ordered: m[3]==='TRUE' });
+      });
+      nextId = Math.max(...jobs.map(j=>j.id), 0) + 1;
+      saveLocal();
+    }
+    setSyncStatus('ok', 'Synced');
+    render();
+  } catch(e) {
+    setSyncStatus('err', 'Offline');
+    loadLocal();
+    render();
+  }
+}
+
+function scheduleSyncToSheets() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => { saveLocal(); syncToSheets(); }, 1500);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function isStalled(j) { return STALL.includes(j.stage); }
+function matsPending(j) { return (j.mats||[]).filter(m=>!m.ordered).length; }
+function statusDot(j) {
+  if (j.blocker) return 'dot-r';
+  if (j.days > 14) return 'dot-a';
+  return 'dot-g';
+}
+function nextStage(j) {
+  const stages = j.type==='lead' ? [...LEAD_STAGES,'Awarded',...JOB_STAGES] : JOB_STAGES;
+  const i = stages.indexOf(j.stage);
+  return i>=0 && i<stages.length-1 ? stages[i+1] : null;
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+function setFilter(f) {
+  filter = f;
+  ['all','leads','jobs'].forEach(x => {
+    document.getElementById('f-'+x).style.background = x===f ? 'var(--navy)' : '';
+    document.getElementById('f-'+x).style.color = x===f ? '#fff' : '';
+    document.getElementById('f-'+x).style.borderColor = x===f ? 'var(--navy)' : '';
+  });
+  render();
+}
+
+// ── PIPELINE RENDER ───────────────────────────────────────────────────────────
+function render() {
+  const root = document.getElementById('board-root');
+  const vis = jobs.filter(j => filter==='all'||(filter==='leads'&&j.type==='lead')||(filter==='jobs'&&j.type==='job'));
+  const active = vis.filter(j => !isStalled(j) && j.stage!=='Complete');
+  const stalled = vis.filter(j => isStalled(j));
+  const leadLanes = LEAD_STAGES.map(s=>({stage:s,cards:active.filter(j=>j.type==='lead'&&j.stage===s)}));
+  const jobLanes  = JOB_STAGES.filter(s=>s!=='Complete').map(s=>({stage:s,cards:active.filter(j=>j.type==='job'&&j.stage===s)}));
+  let h = '';
+
+  if (filter!=='jobs') {
+    h += `<div class="section-label">Leads pipeline</div><div class="lane-scroll">`;
+    leadLanes.forEach(l => {
+      h += `<div class="lane"><div class="lane-head">${l.stage}<span class="lane-count">${l.cards.length}</span></div><div class="lane-body">`;
+      l.cards.forEach(c => h += cardHTML(c));
+      h += `</div></div>`;
+    });
+    h += `</div>`;
+  }
+  if (filter!=='leads') {
+    if (filter==='all') h += `<hr class="divider">`;
+    h += `<div class="section-label">Active jobs</div><div class="lane-scroll">`;
+    jobLanes.forEach(l => {
+      h += `<div class="lane"><div class="lane-head">${l.stage}<span class="lane-count">${l.cards.length}</span></div><div class="lane-body">`;
+      l.cards.forEach(c => h += cardHTML(c));
+      h += `</div></div>`;
+    });
+    h += `</div>`;
+  }
+  if (stalled.length) {
+    h += `<hr class="divider"><div class="section-label">Stalled — needs attention</div><div class="stalled-grid">`;
+    stalled.forEach(c => {
+      const mp = matsPending(c);
+      h += `<div class="stalled-card" onclick="openEdit(${c.id})">
+        <div class="card-name">${c.name}</div>
+        <div class="card-next">${c.next||'—'}</div>
+        <div class="card-meta" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">
+          ${c.blocker?`<span class="badge badge-blk">${c.blocker}</span>`:''}
+          <span class="badge badge-age">${c.days}d</span>
+          ${mp?`<span class="badge badge-mat">${mp} to order</span>`:''}
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  root.innerHTML = h;
+}
+
+function cardHTML(c) {
+  const mp = matsPending(c);
+  const matDone = (c.mats||[]).length>0 && mp===0;
+  return `<div class="card" onclick="openEdit(${c.id})">
+    <div class="card-name">${c.name}</div>
+    <div class="card-next">${c.next||'Set next action'}</div>
+    <div class="card-meta">
+      <div class="dot ${statusDot(c)}"></div>
+      ${c.value?`<span class="badge badge-val">$${Number(c.value).toLocaleString()}</span>`:''}
+      <span class="badge badge-age">${c.days}d</span>
+      ${c.blocker?`<span class="badge badge-blk">${c.blocker}</span>`:''}
+      ${mp?`<span class="badge badge-mat" onclick="event.stopPropagation();openMatModal(${c.id})">${mp} to order</span>`:matDone?`<span class="badge badge-mat-done">✓ mats ready</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ── ORDER LIST RENDER ─────────────────────────────────────────────────────────
+function renderOrders() {
+  const root = document.getElementById('order-root');
+  const active  = jobs.filter(j=>!isStalled(j)&&j.stage!=='Complete'&&matsPending(j)>0);
+  const stalled = jobs.filter(j=>isStalled(j)&&matsPending(j)>0);
+  const total = [...active,...stalled].reduce((a,j)=>a+matsPending(j),0);
+  let h = '';
+  if (total===0) {
+    h = `<div class="empty-state"><div class="empty-icon">✅</div><div>All materials ordered.<br>Nothing pending right now.</div></div>`;
+  } else {
+    h += `<div class="order-summary-bar">📦 ${total} item${total!==1?'s':''} to order across ${active.length+stalled.length} job${active.length+stalled.length!==1?'s':''} — one call to your rep covers it all</div>`;
+    if (active.length) {
+      h += `<div class="section-label">Active jobs</div>`;
+      active.forEach(j => {
+        const items = (j.mats||[]).filter(m=>!m.ordered);
+        h += `<div class="order-job"><div class="order-job-name">${j.name}<span class="order-stage-tag">${j.stage}</span></div>`;
+        items.forEach(m => {
+          h += `<div class="order-item"><input type="checkbox" onchange="toggleMat(${j.id},'${m.id}',this.checked,true)"><span class="order-item-text">${m.text}</span></div>`;
+        });
+        h += `</div>`;
+      });
+    }
+    if (stalled.length) {
+      h += `<div class="section-label">Stalled — order when job resumes</div>`;
+      stalled.forEach(j => {
+        const items = (j.mats||[]).filter(m=>!m.ordered);
+        h += `<div class="order-job" style="opacity:.6"><div class="order-job-name">${j.name}<span class="order-stage-tag">${j.stage}</span></div>`;
+        items.forEach(m => {
+          h += `<div class="order-item"><input type="checkbox" onchange="toggleMat(${j.id},'${m.id}',this.checked,true)"><span class="order-item-text">${m.text}</span></div>`;
+        });
+        h += `</div>`;
+      });
+    }
+  }
+  root.innerHTML = h;
+}
+
+// ── GUIDE RENDER ──────────────────────────────────────────────────────────────
+function renderGuide() {
+  const root = document.getElementById('guide-root');
+  const sections = [
+    { emoji:'📲', title:'1 — Lead comes in', sub:'Same day — respond fast', body:`
+      <p>Every lead gets into the system the same day — even if it's just 30 seconds of notes. If it's not in the app it doesn't exist.</p>
+      <div class="guide-callout callout-amber"><strong>Rule:</strong> Never let a lead live only in your texts or your head.</div>
+      <ul>
+        <li>Tap <strong>+ Lead</strong> on the Pipeline tab</li>
+        <li>Enter name, what they need, and set a next action</li>
+        <li>Note where the lead came from (referral, repeat, cold call)</li>
+        <li>If you can scope it by phone, move straight to Estimating</li>
+      </ul>` },
+    { emoji:'👀', title:'2 — Site visit', sub:'Within 2–3 days', body:`
+      <p>Get eyes on anything over a few hundred dollars, or anything with unknowns. A 20-min visit saves hours of re-estimating.</p>
+      <ul>
+        <li>Walk the full scope — look for complications</li>
+        <li>Note panel condition, access issues, existing work</li>
+        <li>Take photos on your phone</li>
+        <li>When you get back to the truck: update the card, add known materials</li>
+      </ul>
+      <div class="guide-callout callout-green"><strong>Pro tip:</strong> The site visit is also a sales call. How you show up to look at the job tells them how you'll show up to do it.</div>` },
+    { emoji:'🧮', title:'3 — Estimating', sub:'Within 24–48 hrs of site visit', body:`
+      <p>Open your Estimate Workbook. Every bid, every time — no gut feel shortcuts.</p>
+      <ul>
+        <li>Check Settings tab has your current labor rates and overhead</li>
+        <li>Find your assemblies, enter QTY only — everything else calculates</li>
+        <li>Add any custom items with your own hours and material cost</li>
+        <li>Review the Total Bid Price — does it feel right for the scope?</li>
+        <li>Move the pipeline card to Bid Sent after you send it</li>
+        <li>Set next action: "Follow up in 3 days if no response"</li>
+      </ul>
+      <div class="guide-callout callout-amber"><strong>Rule:</strong> One job estimated wrong can wipe out the profit from three jobs done right.</div>` },
+    { emoji:'🤝', title:'4 — Job awarded', sub:'The day they say yes', body:`
+      <p>Lead becomes a job. A few things happen immediately.</p>
+      <ul>
+        <li>Collect deposit before any work starts — non-negotiable</li>
+        <li>Move the card: it becomes a Job at "Deposit received"</li>
+        <li>Open Job Cost Tracker — new entry for this job</li>
+        <li>Paste estimated hours and costs from the Estimate Workbook</li>
+        <li>Review material list — add anything from the site visit</li>
+      </ul>
+      <div class="guide-callout callout-amber"><strong>Rule:</strong> No deposit, no schedule. Every job, every time. It's not awkward — it's professional.</div>` },
+    { emoji:'📦', title:'5 — Materials & scheduling', sub:'5–7 days before job starts', body:`
+      <p>This is where reactive contractors lose money. The fix is a Thursday habit.</p>
+      <div class="guide-step"><div class="step-num">1</div><div class="step-text">Open the <strong>Order List tab</strong> in this app every Thursday</div></div>
+      <div class="guide-step"><div class="step-num">2</div><div class="step-text">Review every item flagged across all active jobs</div></div>
+      <div class="guide-step"><div class="step-num">3</div><div class="step-text">One call to your supply house rep — one order covers everything</div></div>
+      <div class="guide-step"><div class="step-num">4</div><div class="step-text">Check off ordered items in the app</div></div>
+      <div class="guide-callout callout-green"><strong>Pro tip:</strong> Tell your rep you're moving to weekly Thursday orders. Ask about next-day delivery. As your volume grows, your pricing gets better.</div>` },
+    { emoji:'⚡', title:'6 — Daily field tracking', sub:'5 minutes at end of every work day', body:`
+      <p>Sitting in your truck before you drive home. The job is fresh. Takes 2 minutes.</p>
+      <ul>
+        <li>Open Job Cost Tracker for the job you worked today</li>
+        <li>Log each worker's hours — name, hours, phase</li>
+        <li>Log any materials purchased — supplier, description, amount</li>
+        <li>Check the Budget Snapshot — tracking close to estimate?</li>
+        <li>Update the pipeline card next action if anything changed</li>
+      </ul>
+      <div class="guide-callout callout-amber"><strong>Habit:</strong> Do it in the truck before you drive home. Once you leave, details fade fast.</div>` },
+    { emoji:'📋', title:'7 — Change orders', sub:'Before you do any extra work', body:`
+      <p>Customer asks for anything outside the original scope? Stop. Write it up first.</p>
+      <ul>
+        <li>Describe the extra work in plain language</li>
+        <li>State the additional cost</li>
+        <li>Get a "yes" in writing — a text reply counts</li>
+        <li>Add the amount to the Job Cost Tracker</li>
+        <li>Add it as a line item on the final invoice</li>
+      </ul>
+      <div class="guide-callout callout-amber"><strong>Rule:</strong> Verbal approvals disappear. Screenshot the text. Takes 10 seconds.</div>` },
+    { emoji:'✅', title:'8 — Closeout & invoice', sub:'Same day job is complete', body:`
+      <p>Before you send the final invoice, run through this checklist every time:</p>
+      <ul>
+        <li>All punchlist items resolved</li>
+        <li>Final inspection passed and paperwork on file</li>
+        <li>All materials logged in Job Cost Tracker</li>
+        <li>All labor hours logged</li>
+        <li>Compare actual vs. estimated — note the variance</li>
+        <li>Update Job Dashboard with final numbers</li>
+        <li>Any change orders added to invoice total</li>
+        <li>Photos of completed work taken</li>
+      </ul>
+      <div class="guide-callout callout-green"><strong>Scaling tip:</strong> Review your last 5 jobs monthly. Which job types made the best margin? That data tells you which work to chase.</div>
+      <p style="margin-top:10px">After payment: mark Complete on the pipeline, file all documents, ask for a Google review.</p>` },
+  ];
+
+  let h = '';
+  sections.forEach((s, i) => {
+    h += `<div class="guide-section">
+      <div class="guide-head" onclick="toggleGuide(${i})">
+        <div class="guide-emoji">${s.emoji}</div>
+        <div><div class="guide-title">${s.title}</div><div class="guide-subtitle">${s.sub}</div></div>
+        <div class="guide-arrow" id="garrow-${i}">▼</div>
+      </div>
+      <div class="guide-body" id="gbody-${i}">${s.body}</div>
+    </div>`;
+  });
+  root.innerHTML = h;
+}
+
+function toggleGuide(i) {
+  const body = document.getElementById('gbody-'+i);
+  const arrow = document.getElementById('garrow-'+i);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// ── RHYTHM RENDER ─────────────────────────────────────────────────────────────
+function renderRhythm() {
+  const root = document.getElementById('rhythm-root');
+  const items = [
+    { day:'Daily', title:'End of work day — in your truck', desc:'Log hours and materials for jobs worked today. Update next actions on pipeline cards. Check budget snapshot for any jobs running over.', time:'~5 min' },
+    { day:'Monday', title:'Morning coffee review', desc:"Scan the Pipeline Board — what's active this week? Confirm materials are ready for jobs starting this week. Anything stalled that needs a call?", time:'~5 min' },
+    { day:'Thursday', title:'Weekly material order', desc:'Open the Order List tab. Review everything flagged across all jobs. Call your supply house rep — one consolidated order. Check off ordered items.', time:'~15 min' },
+    { day:'Friday', title:'End of week review', desc:'Check Job Dashboard for any jobs running over budget. Follow up on any bids with no response. Set your schedule for the following week.', time:'~15 min' },
+    { day:'Monthly', title:'First Monday of month', desc:'Review last month\'s completed jobs on the Dashboard. Are your estimates accurate? Adjust assembly hours if needed. Review overhead — update Settings tab if costs changed.', time:'~30 min' },
+  ];
+  let h = `<div class="section-label">Build these habits first — everything else follows</div>`;
+  items.forEach(item => {
+    h += `<div class="rhythm-card">
+      <div class="rhythm-day">${item.day}</div>
+      <div class="rhythm-content">
+        <div class="rhythm-title">${item.title}</div>
+        <div class="rhythm-desc">${item.desc}</div>
+        <div class="rhythm-time">⏱ ${item.time}</div>
+      </div>
+    </div>`;
+  });
+  root.innerHTML = h;
+}
+
+// ── SETTINGS RENDER ───────────────────────────────────────────────────────────
+function renderSettings() {
+  const root = document.getElementById('settings-root');
+  root.innerHTML = `
+    <div class="settings-card">
+      <h3>About This App</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6">This app saves your jobs locally on this device and syncs to your Google Sheet automatically whenever you make a change. Open it on any device with internet to load your latest data.</p>
+    </div>
+    <div class="settings-card">
+      <h3>Data</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="fab" onclick="loadFromSheets()">↓ Reload from Google Sheets</button>
+        <button class="fab" onclick="forceSyncNow()">↑ Force sync to Google Sheets</button>
+        <button class="fab" style="color:var(--red);border-color:#F5C6C2" onclick="clearAllData()">Clear all local data</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>Your Google Sheet</h3>
+      <p style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:8px">All your job data syncs here automatically.</p>
+      <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}" target="_blank" class="fab" style="display:inline-block;text-decoration:none;text-align:center">Open Google Sheet ↗</a>
+    </div>
+  `;
+}
+
+function forceSyncNow() { syncToSheets().then(()=>toast('Synced to Google Sheets')); }
+function clearAllData() {
+  if (confirm('Clear all local data? This cannot be undone.')) {
+    localStorage.removeItem('me_jobs'); localStorage.removeItem('me_nextid');
+    jobs = getSampleJobs(); nextId = 20; saveLocal(); render(); toast('Data cleared');
+  }
+}
+
+// ── VIEW SWITCHING ────────────────────────────────────────────────────────────
+function showView(name) {
+  ['pipeline','orders','guide','rhythm','settings'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['pipeline','orders','guide','rhythm','settings'][i]===name);
+  });
+  if (name==='orders') renderOrders();
+  if (name==='guide') renderGuide();
+  if (name==='rhythm') renderRhythm();
+  if (name==='settings') renderSettings();
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openAdd(type) {
+  editingId = null;
+  const j = {id:null,type,name:'',stage:type==='lead'?LEAD_STAGES[0]:JOB_STAGES[0],next:'',blocker:'',value:'',days:0,mats:[]};
+  showJobModal(j, true);
+}
+function openEdit(id) {
+  editingId = id;
+  showJobModal(jobs.find(j=>j.id===id), false);
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  editingId = null; matJobId = null;
+}
+
+function showJobModal(job, isNew) {
+  const ns = nextStage(job);
+  const stageOpts = ALL_STAGES.map(s=>`<option value="${s}"${job.stage===s?' selected':''}>${s}</option>`).join('');
+  const typeOpts = `<option value="lead"${job.type==='lead'?' selected':''}>Lead</option><option value="job"${job.type==='job'?' selected':''}>Job</option>`;
+  document.getElementById('modal-inner').innerHTML = `
+    <h2>${isNew?'New '+job.type:'Edit job'}</h2>
+    <label class="field-label">Customer / Job name</label>
+    <input class="field-input" id="f-name" value="${job.name}" placeholder="e.g. Smith – service upgrade">
+    <label class="field-label">Type</label>
+    <select class="field-input" id="f-type">${typeOpts}</select>
+    <label class="field-label">Stage</label>
+    <select class="field-input" id="f-stage">${stageOpts}</select>
+    <label class="field-label">Next action</label>
+    <input class="field-input" id="f-next" value="${job.next||''}" placeholder="What needs to happen next?">
+    <label class="field-label">Blocker (leave blank if none)</label>
+    <input class="field-input" id="f-blocker" value="${job.blocker||''}" placeholder="e.g. Waiting on client">
+    <label class="field-label">Estimated value ($)</label>
+    <input class="field-input" id="f-value" type="number" value="${job.value||''}">
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="saveJob()">Save</button>
+    </div>
+    ${!isNew?`<button class="btn-advance" onclick="closeModal();openMatModal(${job.id})">📦 Manage materials for this job</button>`:''}
+    ${!isNew&&ns?`<button class="btn-advance" onclick="advanceStage(${job.id})">Move to: ${ns} →</button>`:''}
+    ${!isNew?`<button class="btn-delete" onclick="delJob(${job.id})">Remove job</button>`:''}
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function saveJob() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Please enter a name'); return; }
+  const d = {
+    name, type: document.getElementById('f-type').value,
+    stage: document.getElementById('f-stage').value,
+    next: document.getElementById('f-next').value.trim(),
+    blocker: document.getElementById('f-blocker').value.trim(),
+    value: parseInt(document.getElementById('f-value').value)||0
+  };
+  if (editingId) { Object.assign(jobs.find(j=>j.id===editingId), d); }
+  else { jobs.push({id:nextId++, days:0, mats:[], ...d}); }
+  closeModal(); render(); scheduleSyncToSheets();
+  toast(editingId ? 'Job updated' : 'Job added');
+}
+
+function advanceStage(id) {
+  const j = jobs.find(j=>j.id===id);
+  const ns = nextStage(j);
+  if (ns) { j.stage = ns==='Awarded'?'Deposit received':ns; if(ns==='Awarded')j.type='job'; j.days=0; }
+  closeModal(); render(); scheduleSyncToSheets();
+  toast('Moved to ' + (ns==='Awarded'?'Deposit received':ns));
+}
+
+function delJob(id) {
+  if (!confirm('Remove this job?')) return;
+  jobs = jobs.filter(j=>j.id!==id);
+  closeModal(); render(); scheduleSyncToSheets();
+  toast('Job removed');
+}
+
+// ── MATERIALS MODAL ───────────────────────────────────────────────────────────
+function openMatModal(id) {
+  matJobId = id;
+  renderMatModal();
+  document.getElementById('modal').classList.add('open');
+}
+
+function renderMatModal() {
+  const j = jobs.find(x=>x.id===matJobId);
+  if (!j) return;
+  const items = (j.mats||[]).map(m=>`
+    <div class="mat-item">
+      <input type="checkbox" class="mat-check" ${m.ordered?'checked':''} onchange="toggleMat(${j.id},'${m.id}',this.checked,false)">
+      <span class="mat-text ${m.ordered?'done':''}">${m.text}</span>
+      <span class="mat-del" onclick="delMat(${j.id},'${m.id}')">×</span>
+    </div>`).join('');
+  document.getElementById('modal-inner').innerHTML = `
+    <h2>Materials</h2>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:10px">${j.name}</p>
+    <div id="mat-list">${items||'<p style="font-size:13px;color:var(--text3);padding:8px 0">No materials added yet</p>'}</div>
+    <div class="mat-add-row">
+      <input class="field-input" id="mat-input" placeholder="Add item (e.g. 200A panel)" onkeydown="if(event.key==='Enter')addMat(${j.id})">
+      <button class="btn-add-mat" onclick="addMat(${j.id})">Add</button>
+    </div>
+    <div class="btn-row"><button class="btn btn-save" onclick="closeModal();render()">Done</button></div>
+    <button class="btn-advance" onclick="closeModal();render();openEdit(${j.id})">← Back to job</button>
+  `;
+}
+
+function toggleMat(jobId, matId, checked, reRenderOrders) {
+  const j = jobs.find(x=>x.id===jobId);
+  const m = (j.mats||[]).find(m=>m.id===matId);
+  if (m) m.ordered = checked;
+  scheduleSyncToSheets();
+  if (reRenderOrders) renderOrders();
+  else renderMatModal();
+}
+function delMat(jobId, matId) {
+  const j = jobs.find(x=>x.id===jobId);
+  j.mats = (j.mats||[]).filter(m=>m.id!==matId);
+  scheduleSyncToSheets(); renderMatModal();
+}
+function addMat(jobId) {
+  const inp = document.getElementById('mat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  const j = jobs.find(x=>x.id===jobId);
+  if (!j.mats) j.mats = [];
+  j.mats.push({id:'m'+Date.now(), text, ordered:false});
+  inp.value = '';
+  scheduleSyncToSheets(); renderMatModal();
+}
+
+// ── CLOSE MODAL ON BG CLICK ───────────────────────────────────────────────────
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) { closeModal(); render(); }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadLocal();
+setFilter('all');
+loadFromSheets();
+</script>
+</body>
+</html>
