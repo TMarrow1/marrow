@@ -196,6 +196,43 @@ select.field-input { appearance: none; background-image: url("data:image/svg+xml
 /* ── TOAST ── */
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 20px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── TIME & COST ── */
+.tc-job { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+.tc-job-head { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.tc-job-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+.tc-job-stage { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.tc-job-body { border-top: 1px solid var(--border); padding: 12px 14px; }
+.tc-summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.tc-stat { flex: 1; min-width: 80px; background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; }
+.tc-stat-val { font-size: 16px; font-weight: 600; color: var(--navy); font-family: 'DM Mono', monospace; }
+.tc-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+.tc-stat-over { color: var(--red); }
+.tc-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin: 12px 0 6px; }
+.tc-entry { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.tc-entry:last-child { border-bottom: none; }
+.tc-entry-main { flex: 1; }
+.tc-entry-name { font-weight: 500; color: var(--text); }
+.tc-entry-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.tc-entry-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); white-space: nowrap; }
+.tc-entry-del { font-size: 16px; color: var(--text3); cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+.tc-entry-del:hover { color: var(--red); }
+.tc-add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.tc-add-row .field-input { flex: 1; min-width: 80px; }
+.btn-clock { width: 100%; padding: 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; border: none; margin-bottom: 8px; transition: all .15s; }
+.btn-clock-in { background: var(--green); color: #fff; }
+.btn-clock-in:hover { background: #245a40; }
+.btn-clock-out { background: var(--red); color: #fff; }
+.btn-clock-out:hover { background: #a0312a; }
+.clock-running { background: var(--red-bg); border: 1px solid #F5C6C2; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; font-size: 13px; color: var(--red); font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
+.clock-timer { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 600; }
+
+/* ── OVERHEAD ── */
+.oh-entry { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.oh-entry:last-child { border-bottom: none; }
+.oh-type { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 10px; background: var(--amber-bg); color: var(--amber-dim); white-space: nowrap; }
+.oh-type-drive { background: var(--blue-bg); color: var(--blue); }
+.oh-type-admin { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -221,6 +258,8 @@ select.field-input { appearance: none; background-image: url("data:image/svg+xml
 <div class="nav" id="main-nav">
   <div class="nav-tab active" onclick="showView('pipeline')">Pipeline</div>
   <div class="nav-tab" onclick="showView('orders')">Order List</div>
+  <div class="nav-tab" onclick="showView('timecost')">Time & Cost</div>
+  <div class="nav-tab" onclick="showView('overhead')">Overhead</div>
   <div class="nav-tab" onclick="showView('guide')">Field Guide</div>
   <div class="nav-tab" onclick="showView('rhythm')">Weekly Rhythm</div>
   <div class="nav-tab" onclick="showView('settings')">Settings</div>
@@ -242,6 +281,16 @@ select.field-input { appearance: none; background-image: url("data:image/svg+xml
   <!-- ORDER LIST -->
   <div id="view-orders" style="display:none">
     <div id="order-root"></div>
+  </div>
+
+  <!-- TIME & COST -->
+  <div id="view-timecost" style="display:none">
+    <div id="timecost-root"></div>
+  </div>
+
+  <!-- OVERHEAD -->
+  <div id="view-overhead" style="display:none">
+    <div id="overhead-root"></div>
   </div>
 
   <!-- FIELD GUIDE -->
@@ -280,17 +329,20 @@ const STALL       = ['Waiting on client','Waiting on inspection','Waiting on per
 const ALL_STAGES  = [...LEAD_STAGES,...STALL,...JOB_STAGES];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let jobs = [], filter = 'all', editingId = null, matJobId = null, nextId = 1, syncTimer = null;
+let jobs = [], overhead = [], filter = 'all', editingId = null, matJobId = null, nextId = 1, syncTimer = null, clockTimer = null;
 
 // ── LOCAL STORAGE ─────────────────────────────────────────────────────────────
 function saveLocal() {
   localStorage.setItem('me_jobs', JSON.stringify(jobs));
   localStorage.setItem('me_nextid', nextId);
+  localStorage.setItem('me_overhead', JSON.stringify(overhead));
 }
 function loadLocal() {
   const d = localStorage.getItem('me_jobs');
   if (d) { jobs = JSON.parse(d); nextId = parseInt(localStorage.getItem('me_nextid') || '1'); }
   else { jobs = getSampleJobs(); nextId = 20; saveLocal(); }
+  const oh = localStorage.getItem('me_overhead');
+  overhead = oh ? JSON.parse(oh) : [];
 }
 
 function getSampleJobs() {
@@ -646,7 +698,13 @@ function renderSettings() {
   const root = document.getElementById('settings-root');
   root.innerHTML = `
     <div class="settings-card">
-      <h3>About This App</h3>
+      <h3>Labor Rate</h3>
+      <div class="settings-row">
+        <label>Your billable labor rate ($/hr) — used for job cost calculations</label>
+        <input class="field-input" type="number" id="labor-rate-input" value="${localStorage.getItem('me_labor_rate')||'65'}" style="width:80px">
+      </div>
+      <button class="fab" onclick="saveLaborRate()">Save rate</button>
+    </div>
       <p style="font-size:13px;color:var(--text2);line-height:1.6">This app saves your jobs locally on this device and syncs to your Google Sheet automatically whenever you make a change. Open it on any device with internet to load your latest data.</p>
     </div>
     <div class="settings-card">
@@ -666,6 +724,12 @@ function renderSettings() {
 }
 
 function forceSyncNow() { syncToSheets().then(()=>toast('Synced to Google Sheets')); }
+function saveLaborRate() {
+  const val = parseInt(document.getElementById('labor-rate-input').value);
+  if (!val || val < 1) { toast('Enter a valid rate'); return; }
+  localStorage.setItem('me_labor_rate', val);
+  toast('Labor rate saved — $' + val + '/hr');
+}
 function clearAllData() {
   if (confirm('Clear all local data? This cannot be undone.')) {
     localStorage.removeItem('me_jobs'); localStorage.removeItem('me_nextid');
@@ -675,16 +739,301 @@ function clearAllData() {
 
 // ── VIEW SWITCHING ────────────────────────────────────────────────────────────
 function showView(name) {
-  ['pipeline','orders','guide','rhythm','settings'].forEach(v => {
+  ['pipeline','orders','timecost','overhead','guide','rhythm','settings'].forEach(v => {
     document.getElementById('view-'+v).style.display = v===name ? '' : 'none';
   });
   document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['pipeline','orders','guide','rhythm','settings'][i]===name);
+    t.classList.toggle('active', ['pipeline','orders','timecost','overhead','guide','rhythm','settings'][i]===name);
   });
   if (name==='orders') renderOrders();
+  if (name==='timecost') renderTimeCost();
+  if (name==='overhead') renderOverhead();
   if (name==='guide') renderGuide();
   if (name==='rhythm') renderRhythm();
   if (name==='settings') renderSettings();
+}
+
+// ── TIME & COST ───────────────────────────────────────────────────────────────
+function totalHours(j) {
+  return ((j.timeEntries||[]).reduce((s,e) => s + (e.hours||0), 0)).toFixed(1);
+}
+function totalMatCost(j) {
+  return (j.matCosts||[]).reduce((s,m) => s + (m.cost||0), 0);
+}
+function laborCost(j) {
+  const rate = parseInt(localStorage.getItem('me_labor_rate')||'65');
+  return parseFloat(totalHours(j)) * rate;
+}
+
+function renderTimeCost() {
+  const root = document.getElementById('timecost-root');
+  const activeJobs = jobs.filter(j => j.type==='job' && j.stage!=='Complete');
+  const laborRate = parseInt(localStorage.getItem('me_labor_rate')||'65');
+
+  // Check for any active clock
+  const clocked = jobs.find(j => (j.timeEntries||[]).some(e => e.clockedIn));
+
+  let h = '';
+
+  if (clocked) {
+    const entry = clocked.timeEntries.find(e => e.clockedIn);
+    h += `<div class="clock-running">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Clocked in — ${clocked.name}</div>
+        <div>${entry.worker} · started ${entry.startTime}</div>
+      </div>
+      <div class="clock-timer" id="live-timer">--:--</div>
+    </div>`;
+  }
+
+  if (!activeJobs.length) {
+    h += `<div class="empty-state"><div class="empty-icon">⏱</div><div>No active jobs to track time on.<br>Add a job from the Pipeline tab.</div></div>`;
+    root.innerHTML = h;
+    startLiveTimer();
+    return;
+  }
+
+  activeJobs.forEach(j => {
+    const hrs = totalHours(j);
+    const matCost = totalMatCost(j);
+    const labor = laborCost(j);
+    const total = labor + matCost;
+    const est = j.value || 0;
+    const isOver = est > 0 && total > est;
+    const hasActive = (j.timeEntries||[]).some(e => e.clockedIn);
+
+    h += `<div class="tc-job">
+      <div class="tc-job-head" onclick="toggleTCJob('tc-${j.id}')">
+        <div>
+          <div class="tc-job-name">${j.name}</div>
+          <div class="tc-job-stage">${j.stage}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:600;color:${isOver?'var(--red)':'var(--green)'};font-family:'DM Mono',monospace">$${total.toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text3)">${est?'est $'+Number(est).toLocaleString():'no estimate'}</div>
+        </div>
+      </div>
+      <div class="tc-job-body" id="tc-${j.id}" style="display:none">
+        <div class="tc-summary">
+          <div class="tc-stat"><div class="tc-stat-val">${hrs}h</div><div class="tc-stat-label">Hours</div></div>
+          <div class="tc-stat"><div class="tc-stat-val">$${labor.toLocaleString()}</div><div class="tc-stat-label">Labor @ $${laborRate}/h</div></div>
+          <div class="tc-stat"><div class="tc-stat-val">$${matCost.toLocaleString()}</div><div class="tc-stat-label">Materials</div></div>
+          <div class="tc-stat"><div class="tc-stat-val ${isOver?'tc-stat-over':''}">$${total.toLocaleString()}</div><div class="tc-stat-label">Total Cost</div></div>
+        </div>
+
+        ${hasActive
+          ? `<button class="btn-clock btn-clock-out" onclick="clockOut(${j.id})">⏹ Clock Out</button>`
+          : `<div style="display:flex;gap:6px;margin-bottom:8px">
+              <input class="field-input" id="worker-${j.id}" placeholder="Worker name" style="flex:1">
+              <button class="btn-clock btn-clock-in" style="width:auto;padding:12px 16px;margin:0" onclick="clockIn(${j.id})">▶ Clock In</button>
+            </div>`
+        }
+
+        <div class="tc-section-title">Time entries</div>
+        <div id="time-list-${j.id}">
+          ${(j.timeEntries||[]).filter(e=>!e.clockedIn).map(e => `
+            <div class="tc-entry">
+              <div class="tc-entry-main">
+                <div class="tc-entry-name">${e.worker}</div>
+                <div class="tc-entry-meta">${e.date} · ${e.hours}h</div>
+              </div>
+              <div class="tc-entry-val">$${(e.hours * laborRate).toLocaleString()}</div>
+              <div class="tc-entry-del" onclick="delTimeEntry(${j.id},'${e.id}')">×</div>
+            </div>`).join('') || '<div style="font-size:13px;color:var(--text3);padding:6px 0">No entries yet</div>'}
+        </div>
+
+        <div class="tc-section-title" style="margin-top:14px">Add time manually</div>
+        <div class="tc-add-row">
+          <input class="field-input" id="mw-${j.id}" placeholder="Worker" style="flex:1.2">
+          <input class="field-input" id="mh-${j.id}" type="number" placeholder="Hours" step="0.5" min="0" style="flex:0.8">
+          <button class="btn-add-mat" onclick="addTimeManual(${j.id})">Add</button>
+        </div>
+
+        <div class="tc-section-title" style="margin-top:14px">Material costs</div>
+        <div id="matcost-list-${j.id}">
+          ${(j.matCosts||[]).map(m => `
+            <div class="tc-entry">
+              <div class="tc-entry-main">
+                <div class="tc-entry-name">${m.desc}</div>
+                <div class="tc-entry-meta">${m.date} · ${m.supplier||''}</div>
+              </div>
+              <div class="tc-entry-val">$${(m.cost||0).toLocaleString()}</div>
+              <div class="tc-entry-del" onclick="delMatCost(${j.id},'${m.id}')">×</div>
+            </div>`).join('') || '<div style="font-size:13px;color:var(--text3);padding:6px 0">No costs logged yet</div>'}
+        </div>
+        <div class="tc-add-row">
+          <input class="field-input" id="md-${j.id}" placeholder="Description" style="flex:2">
+          <input class="field-input" id="ms-${j.id}" placeholder="Supplier" style="flex:1.2">
+          <input class="field-input" id="mc-${j.id}" type="number" placeholder="$" min="0" style="flex:0.8">
+          <button class="btn-add-mat" onclick="addMatCost(${j.id})">Add</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  root.innerHTML = h;
+  startLiveTimer();
+}
+
+function toggleTCJob(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function clockIn(jobId) {
+  const worker = document.getElementById('worker-'+jobId).value.trim();
+  if (!worker) { toast('Enter worker name first'); return; }
+  const j = jobs.find(x=>x.id===jobId);
+  if (!j.timeEntries) j.timeEntries = [];
+  const now = new Date();
+  j.timeEntries.push({
+    id: 'te'+Date.now(), worker, clockedIn: true,
+    startMs: now.getTime(),
+    startTime: now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+    date: now.toLocaleDateString(), hours: 0
+  });
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+  toast(worker + ' clocked in');
+}
+
+function clockOut(jobId) {
+  const j = jobs.find(x=>x.id===jobId);
+  const entry = (j.timeEntries||[]).find(e=>e.clockedIn);
+  if (!entry) return;
+  const hrs = ((Date.now() - entry.startMs) / 3600000);
+  entry.hours = Math.round(hrs * 4) / 4; // round to nearest 0.25
+  entry.clockedIn = false;
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+  toast('Clocked out — ' + entry.hours + 'h logged');
+}
+
+function addTimeManual(jobId) {
+  const worker = document.getElementById('mw-'+jobId).value.trim();
+  const hours = parseFloat(document.getElementById('mh-'+jobId).value);
+  if (!worker || !hours) { toast('Enter worker and hours'); return; }
+  const j = jobs.find(x=>x.id===jobId);
+  if (!j.timeEntries) j.timeEntries = [];
+  j.timeEntries.push({id:'te'+Date.now(), worker, hours, date: new Date().toLocaleDateString(), clockedIn: false});
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+  toast('Time entry added');
+}
+
+function delTimeEntry(jobId, entryId) {
+  const j = jobs.find(x=>x.id===jobId);
+  j.timeEntries = (j.timeEntries||[]).filter(e=>e.id!==entryId);
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+}
+
+function addMatCost(jobId) {
+  const desc = document.getElementById('md-'+jobId).value.trim();
+  const cost = parseFloat(document.getElementById('mc-'+jobId).value);
+  const supplier = document.getElementById('ms-'+jobId).value.trim();
+  if (!desc || !cost) { toast('Enter description and amount'); return; }
+  const j = jobs.find(x=>x.id===jobId);
+  if (!j.matCosts) j.matCosts = [];
+  j.matCosts.push({id:'mc'+Date.now(), desc, cost, supplier, date: new Date().toLocaleDateString()});
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+  toast('Cost added');
+}
+
+function delMatCost(jobId, costId) {
+  const j = jobs.find(x=>x.id===jobId);
+  j.matCosts = (j.matCosts||[]).filter(m=>m.id!==costId);
+  saveLocal(); scheduleSyncToSheets(); renderTimeCost();
+}
+
+function startLiveTimer() {
+  clearInterval(clockTimer);
+  clockTimer = setInterval(() => {
+    const el = document.getElementById('live-timer');
+    if (!el) { clearInterval(clockTimer); return; }
+    let activeEntry = null;
+    jobs.forEach(j => { (j.timeEntries||[]).forEach(e => { if (e.clockedIn) activeEntry = e; }); });
+    if (activeEntry) {
+      const elapsed = Date.now() - activeEntry.startMs;
+      const h = Math.floor(elapsed/3600000);
+      const m = Math.floor((elapsed%3600000)/60000);
+      const s = Math.floor((elapsed%60000)/1000);
+      el.textContent = (h?h+'h ':'') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+  }, 1000);
+}
+
+// ── OVERHEAD ─────────────────────────────────────────────────────────────────
+function renderOverhead() {
+  const root = document.getElementById('overhead-root');
+  const today = new Date().toLocaleDateString();
+  const monthEntries = overhead.filter(e => {
+    const d = new Date(e.date);
+    const now = new Date();
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  });
+  const totalOHHours = monthEntries.reduce((s,e)=>s+(e.hours||0),0);
+  const laborRate = parseInt(localStorage.getItem('me_labor_rate')||'65');
+  const totalOHCost = totalOHHours * laborRate;
+
+  let h = `
+    <div class="tc-summary" style="margin-bottom:14px">
+      <div class="tc-stat"><div class="tc-stat-val">${totalOHHours.toFixed(1)}h</div><div class="tc-stat-label">This month</div></div>
+      <div class="tc-stat"><div class="tc-stat-val">$${totalOHCost.toLocaleString()}</div><div class="tc-stat-label">Overhead cost</div></div>
+    </div>
+    <div class="section-label">Log overhead time</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div class="tc-add-row" style="flex-direction:column;gap:8px">
+        <select class="field-input" id="oh-type">
+          <option value="material_run">Material run</option>
+          <option value="drive">Drive time</option>
+          <option value="admin">Admin / office</option>
+          <option value="other">Other</option>
+        </select>
+        <input class="field-input" id="oh-desc" placeholder="Notes (optional)">
+        <div style="display:flex;gap:8px">
+          <input class="field-input" id="oh-hours" type="number" placeholder="Hours" step="0.25" min="0" style="flex:1">
+          <button class="btn btn-save" style="flex:1" onclick="addOverhead()">Log it</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-label">This month's entries</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0 14px">`;
+
+  if (!monthEntries.length) {
+    h += `<div style="padding:16px 0;font-size:13px;color:var(--text3);text-align:center">No entries this month</div>`;
+  } else {
+    [...monthEntries].reverse().forEach(e => {
+      const typeLabel = {material_run:'Material run',drive:'Drive',admin:'Admin',other:'Other'}[e.type]||e.type;
+      const typeClass = {material_run:'oh-type',drive:'oh-type oh-type-drive',admin:'oh-type oh-type-admin',other:'oh-type oh-type-admin'}[e.type]||'oh-type';
+      h += `<div class="oh-entry">
+        <div class="tc-entry-main">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="${typeClass}">${typeLabel}</span>
+            ${e.desc?`<span style="font-size:13px;color:var(--text2)">${e.desc}</span>`:''}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${e.date}</div>
+        </div>
+        <div class="tc-entry-val">${e.hours}h · $${(e.hours*laborRate).toLocaleString()}</div>
+        <div class="tc-entry-del" onclick="delOverhead('${e.id}')">×</div>
+      </div>`;
+    });
+  }
+  h += `</div>`;
+  root.innerHTML = h;
+}
+
+function addOverhead() {
+  const type = document.getElementById('oh-type').value;
+  const desc = document.getElementById('oh-desc').value.trim();
+  const hours = parseFloat(document.getElementById('oh-hours').value);
+  if (!hours) { toast('Enter hours'); return; }
+  overhead.push({id:'oh'+Date.now(), type, desc, hours, date: new Date().toLocaleDateString()});
+  saveLocal(); scheduleSyncToSheets(); renderOverhead();
+  toast('Overhead logged');
+  document.getElementById('oh-hours').value = '';
+  document.getElementById('oh-desc').value = '';
+}
+
+function delOverhead(id) {
+  overhead = overhead.filter(e=>e.id!==id);
+  saveLocal(); scheduleSyncToSheets(); renderOverhead();
 }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
@@ -725,6 +1074,7 @@ function showJobModal(job, isNew) {
       <button class="btn btn-save" onclick="saveJob()">Save</button>
     </div>
     ${!isNew?`<button class="btn-advance" onclick="closeModal();openMatModal(${job.id})">📦 Manage materials for this job</button>`:''}
+    ${!isNew?`<button class="btn-advance" onclick="closeModal();showView('timecost');setTimeout(()=>{const el=document.getElementById('tc-${job.id}');if(el)el.style.display=''},100)">⏱ Time & cost for this job</button>`:''}
     ${!isNew&&ns?`<button class="btn-advance" onclick="advanceStage(${job.id})">Move to: ${ns} →</button>`:''}
     ${!isNew?`<button class="btn-delete" onclick="delJob(${job.id})">Remove job</button>`:''}
   `;
