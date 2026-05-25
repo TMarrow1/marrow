@@ -75,6 +75,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .badge-mat { background: var(--blue-bg); color: var(--blue); cursor: pointer; }
 .badge-mat-done { background: var(--green-bg); color: var(--green); }
 .badge-tasks { background: var(--purple-bg); color: var(--purple); cursor: pointer; }
+.badge-num { background: var(--navy); color: #fff; cursor: default; letter-spacing: .03em; }
+.num-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.num-block-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); flex: 1; }
+.num-block-val { font-size: 14px; font-weight: 600; color: var(--navy); font-family: 'DM Mono', monospace; }
+.num-copy-btn { padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.num-copy-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+.closeout-checklist { background: var(--amber-bg); border: 1px solid #F0D080; border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 10px; }
+.closeout-checklist-title { font-size: 12px; font-weight: 600; color: var(--amber-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.closeout-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; color: var(--text2); border-bottom: 1px solid rgba(200,160,0,.15); cursor: pointer; }
+.closeout-item:last-child { border-bottom: none; }
+.closeout-item.co-done { color: var(--text3); text-decoration: line-through; }
+.closeout-box { width: 16px; height: 16px; border: 1.5px solid var(--amber-dim); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.closeout-box.co-done-box { background: var(--green); border-color: var(--green); }
+.closeout-box.co-done-box::after { content: '✓'; font-size: 10px; color: #fff; font-weight: 700; }
+.convert-banner { background: var(--green-bg); border: 1px solid #A8D5B8; border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 10px; }
+.convert-banner-title { font-size: 12px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.deposit-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.deposit-row .field-input { flex: 1; }
 .stalled-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .stalled-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; cursor: pointer; opacity: .65; transition: opacity .12s, border-color .12s; }
 .stalled-card:hover { opacity: 1; border-color: var(--border2); }
@@ -342,6 +360,16 @@ const DAYS        = ['Mon','Tue','Wed','Thu','Fri'];
 const TODAY_DAY   = DAYS[Math.min(new Date().getDay()-1, 4)] || 'Mon';
 
 let jobs = [], overhead = [], tasks = [], filter = 'all', editingId = null, matJobId = null, nextId = 1, taskNextId = 1, syncTimer = null, clockTimer = null, taskFilter = 'all', expandedTasks = new Set();
+let propCounter = 0, jobCounter = 0;
+
+function getYear() { return new Date().getFullYear().toString().slice(-2); }
+function genPropNum() { propCounter++; saveLocal(); return `ME-${getYear()}-P${String(propCounter).padStart(3,'0')}`; }
+function genJobNum()  { jobCounter++;  saveLocal(); return `ME-${getYear()}-J${String(jobCounter).padStart(3,'0')}`; }
+function copyToClipboard(text, label) {
+  navigator.clipboard.writeText(text).then(()=>toast(`${label} copied`)).catch(()=>{
+    const el=document.createElement('textarea'); el.value=text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); toast(`${label} copied`);
+  });
+}
 
 // ── STORAGE ──────────────────────────────────────────────────────────────────
 function saveLocal() {
@@ -350,6 +378,8 @@ function saveLocal() {
   localStorage.setItem('me_overhead', JSON.stringify(overhead));
   localStorage.setItem('me_tasks', JSON.stringify(tasks));
   localStorage.setItem('me_task_nextid', taskNextId);
+  localStorage.setItem('me_prop_counter', propCounter);
+  localStorage.setItem('me_job_counter', jobCounter);
 }
 function loadLocal() {
   const d = localStorage.getItem('me_jobs');
@@ -361,6 +391,8 @@ function loadLocal() {
   tasks = td ? JSON.parse(td) : getSampleTasks();
   taskNextId = parseInt(localStorage.getItem('me_task_nextid')||'1');
   if (!td) { taskNextId = tasks.length + 1; saveLocal(); }
+  propCounter = parseInt(localStorage.getItem('me_prop_counter')||'0');
+  jobCounter = parseInt(localStorage.getItem('me_job_counter')||'0');
 }
 function getSampleJobs() {
   return [
@@ -484,7 +516,8 @@ function render() {
 function cardHTML(c) {
   const mp = matsPending(c), tp = tasksPending(c);
   const matDone = (c.mats||[]).length>0 && mp===0;
-  return `<div class="card" onclick="openEdit(${c.id})"><div class="card-name">${c.name}</div><div class="card-next">${c.next||'Set next action'}</div><div class="card-meta"><div class="dot ${statusDot(c)}"></div>${c.value?`<span class="badge badge-val">$${Number(c.value).toLocaleString()}</span>`:''}<span class="badge badge-age">${c.days}d</span>${c.blocker?`<span class="badge badge-blk">${c.blocker}</span>`:''}${mp?`<span class="badge badge-mat" onclick="event.stopPropagation();openMatModal(${c.id})">${mp} to order</span>`:matDone?`<span class="badge badge-mat-done">✓ mats</span>`:''}${tp?`<span class="badge badge-tasks" onclick="event.stopPropagation();showView('tasks');setTimeout(()=>setTaskFilter('job_'+${c.id}),50)">${tp} tasks</span>`:''}</div></div>`;
+  const numBadge = c.jobNum ? `<span class="badge badge-num">${c.jobNum}</span>` : c.propNum ? `<span class="badge badge-num">${c.propNum}</span>` : '';
+  return `<div class="card" onclick="openEdit(${c.id})"><div class="card-name">${c.name}</div><div class="card-next">${c.next||'Set next action'}</div><div class="card-meta"><div class="dot ${statusDot(c)}"></div>${c.value?`<span class="badge badge-val">$${Number(c.value).toLocaleString()}</span>`:''}<span class="badge badge-age">${c.days}d</span>${numBadge}${c.blocker?`<span class="badge badge-blk">${c.blocker}</span>`:''}${mp?`<span class="badge badge-mat" onclick="event.stopPropagation();openMatModal(${c.id})">${mp} to order</span>`:matDone?`<span class="badge badge-mat-done">✓ mats</span>`:''}${tp?`<span class="badge badge-tasks" onclick="event.stopPropagation();showView('tasks');setTimeout(()=>setTaskFilter('job_'+${c.id}),50)">${tp} tasks</span>`:''}</div></div>`;
 }
 
 // ── TASKS ─────────────────────────────────────────────────────────────────────
@@ -1017,7 +1050,7 @@ function renderSettings() {
 }
 function saveLaborRate() { const val=parseInt(document.getElementById('labor-rate-input').value); if(!val||val<1){toast('Enter a valid rate');return;} localStorage.setItem('me_labor_rate',val); toast('Labor rate saved — $'+val+'/hr'); }
 function forceSyncNow() { syncToSheets().then(()=>toast('Synced to Google Sheets')); }
-function clearAllData() { if(confirm('Clear all local data? This cannot be undone.')) { localStorage.removeItem('me_jobs'); localStorage.removeItem('me_nextid'); localStorage.removeItem('me_overhead'); localStorage.removeItem('me_tasks'); localStorage.removeItem('me_task_nextid'); jobs=getSampleJobs(); nextId=20; overhead=[]; tasks=getSampleTasks(); taskNextId=tasks.length+1; saveLocal(); render(); updateTasksBadge(); toast('Data cleared'); } }
+function clearAllData() { if(confirm('Clear all local data? This cannot be undone.')) { localStorage.removeItem('me_jobs'); localStorage.removeItem('me_nextid'); localStorage.removeItem('me_overhead'); localStorage.removeItem('me_tasks'); localStorage.removeItem('me_task_nextid'); localStorage.removeItem('me_prop_counter'); localStorage.removeItem('me_job_counter'); jobs=getSampleJobs(); nextId=20; overhead=[]; tasks=getSampleTasks(); taskNextId=tasks.length+1; propCounter=0; jobCounter=0; saveLocal(); render(); updateTasksBadge(); toast('Data cleared'); } }
 
 // ── VIEW SWITCHING ────────────────────────────────────────────────────────────
 function showView(name) {
@@ -1046,8 +1079,53 @@ function showJobModal(job, isNew) {
   const stageOpts = ALL_STAGES.map(s=>`<option value="${s}"${job.stage===s?' selected':''}>${s}</option>`).join('');
   const typeOpts = `<option value="lead"${job.type==='lead'?' selected':''}>Lead</option><option value="job"${job.type==='job'?' selected':''}>Job</option>`;
   const jobTasks = isNew ? [] : tasks.filter(t=>t.jobId===job.id && !t.done);
+
+  // Number blocks
+  let numHtml = '';
+  if (!isNew) {
+    if (job.propNum) numHtml += `<div class="num-block"><div class="num-block-label">Proposal #</div><div class="num-block-val">${job.propNum}</div><button class="num-copy-btn" onclick="copyToClipboard('${job.propNum}','Proposal number')">Copy</button></div>`;
+    if (job.jobNum)  numHtml += `<div class="num-block"><div class="num-block-label">Job #</div><div class="num-block-val">${job.jobNum}</div><button class="num-copy-btn" onclick="copyToClipboard('${job.jobNum}','Job number')">Copy</button></div>`;
+    // Assign proposal # button if lead at Bid sent and no propNum yet
+    if (job.type==='lead' && job.stage==='Bid sent' && !job.propNum) {
+      numHtml += `<button class="btn-advance" style="margin-bottom:4px" onclick="assignPropNum(${job.id})">📋 Assign proposal number</button>`;
+    }
+  }
+
+  // Convert to job banner — shows when lead is at Bid sent or Awarded, no jobNum yet
+  let convertHtml = '';
+  if (!isNew && job.type==='lead' && (job.stage==='Bid sent'||job.stage==='Awarded') && !job.jobNum) {
+    convertHtml = `<div class="convert-banner">
+      <div class="convert-banner-title">🤝 Awarded? Convert to job</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Assigns a job number and records deposit. No deposit = no schedule.</div>
+      <div class="deposit-row">
+        <input class="field-input" id="deposit-amt" type="number" placeholder="Deposit amount $" style="font-size:13px;padding:7px 10px">
+        <button class="btn btn-save" style="flex:0 0 auto;padding:8px 14px;font-size:13px" onclick="convertToJob(${job.id})">Convert → Job</button>
+      </div>
+    </div>`;
+  }
+
+  // Closeout checklist — shows when job is at Punch list or Complete
+  let closeoutHtml = '';
+  if (!isNew && job.type==='job' && (job.stage==='Punch list'||job.stage==='Complete')) {
+    const items = job.closeout || [
+      {text:'All punchlist items resolved',done:false},
+      {text:'Final inspection passed',done:false},
+      {text:'All hours & material costs logged',done:false},
+      {text:'Allowances reconciled / credited',done:false},
+      {text:'Final invoice sent',done:false},
+      {text:'Payment received',done:false},
+      {text:'Google review requested',done:false},
+    ];
+    const allDone = items.every(i=>i.done);
+    closeoutHtml = `<div class="closeout-checklist">
+      <div class="closeout-checklist-title">${allDone?'✅ Job closed out':'📋 Close-out checklist'}</div>
+      ${items.map((item,i)=>`<div class="closeout-item ${item.done?'co-done':''}" onclick="toggleCloseout(${job.id},${i})"><div class="closeout-box ${item.done?'co-done-box':''}"></div>${item.text}</div>`).join('')}
+    </div>`;
+  }
+
   document.getElementById('modal-inner').innerHTML = `
     <h2>${isNew?'New '+job.type:'Edit job'}</h2>
+    ${numHtml}
     <label class="field-label">Customer / Job name</label>
     <input class="field-input" id="f-name" value="${job.name}" placeholder="e.g. Smith – service upgrade">
     <label class="field-label">Type</label>
@@ -1060,7 +1138,9 @@ function showJobModal(job, isNew) {
     <input class="field-input" id="f-blocker" value="${job.blocker||''}" placeholder="e.g. Waiting on client">
     <label class="field-label">Estimated value ($)</label>
     <input class="field-input" id="f-value" type="number" value="${job.value||''}">
-    ${!isNew&&jobTasks.length?`<div style="margin-top:14px;padding:10px 12px;background:var(--purple-bg);border-radius:var(--radius-sm);border:1px solid #D4B8F0"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:6px">Open tasks (${jobTasks.length})</div>${jobTasks.map(t=>`<div style="font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid rgba(107,70,193,.1)">${t.title}</div>`).join('')}</div>`:''}
+    ${convertHtml}
+    ${closeoutHtml}
+    ${!isNew&&jobTasks.length?`<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border-radius:var(--radius-sm);border:1px solid #D4B8F0"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:6px">Open tasks (${jobTasks.length})</div>${jobTasks.map(t=>`<div style="font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid rgba(107,70,193,.1)">${t.title}</div>`).join('')}</div>`:''}
     <div class="btn-row">
       <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn btn-save" onclick="saveJob()">Save</button>
@@ -1068,7 +1148,7 @@ function showJobModal(job, isNew) {
     ${!isNew?`<button class="btn-advance" onclick="closeModal();openAddTask(${job.id})">+ Add task for this job</button>`:''}
     ${!isNew?`<button class="btn-advance" onclick="closeModal();openMatModal(${job.id})">📦 Manage materials for this job</button>`:''}
     ${!isNew?`<button class="btn-advance" onclick="closeModal();showView('timecost');setTimeout(()=>{const el=document.getElementById('tc-${job.id}');if(el)el.style.display=''},100)">⏱ Time & cost for this job</button>`:''}
-    ${!isNew&&ns?`<button class="btn-advance" onclick="advanceStage(${job.id})">Move to: ${ns} →</button>`:''}
+    ${!isNew&&ns&&job.stage!=='Bid sent'?`<button class="btn-advance" onclick="advanceStage(${job.id})">Move to: ${ns} →</button>`:''}
     ${!isNew?`<button class="btn-delete" onclick="delJob(${job.id})">Remove job</button>`:''}
   `;
   document.getElementById('modal').classList.add('open');
@@ -1081,12 +1161,78 @@ function saveJob() {
   if (editingId) {
     const oldName = jobs.find(j=>j.id===editingId).name;
     Object.assign(jobs.find(j=>j.id===editingId),d);
-    // Update task job names if job name changed
     if (oldName !== d.name) { tasks.forEach(t=>{ if(t.jobId===editingId) t.jobName=d.name; }); saveLocal(); updateTasksBadge(); }
   } else { jobs.push({id:nextId++,days:0,mats:[],timeEntries:[],matCosts:[],...d}); }
   closeModal(); render(); scheduleSyncToSheets(); toast(editingId?'Job updated':'Job added');
 }
-function advanceStage(id) { const j=jobs.find(j=>j.id===id),ns=nextStage(j); if(ns){j.stage=ns==='Awarded'?'Deposit received':ns; if(ns==='Awarded')j.type='job'; j.days=0;} closeModal(); render(); scheduleSyncToSheets(); toast('Moved to '+(ns==='Awarded'?'Deposit received':ns)); }
+
+function assignPropNum(id) {
+  const j = jobs.find(x=>x.id===id);
+  if (!j || j.propNum) return;
+  j.propNum = genPropNum();
+  saveLocal(); scheduleSyncToSheets();
+  openEdit(id);
+  toast('Proposal number assigned: ' + j.propNum);
+}
+
+function convertToJob(id) {
+  const j = jobs.find(x=>x.id===id);
+  if (!j) return;
+  const depositEl = document.getElementById('deposit-amt');
+  const deposit = depositEl ? parseFloat(depositEl.value)||0 : 0;
+  if (!deposit) { toast('Enter deposit amount first'); depositEl && depositEl.focus(); return; }
+  j.type = 'job';
+  j.stage = 'Deposit received';
+  j.days = 0;
+  j.deposit = deposit;
+  if (!j.propNum) j.propNum = genPropNum();
+  j.jobNum = genJobNum();
+  // Auto-add deposit task
+  tasks.unshift({id:taskNextId++,cat:'office',jobId:j.id,jobName:j.name,title:`Deposit received — ${j.name} ($${deposit.toLocaleString()})`,pri:'',day:'',done:true,notes:'',checklist:[]});
+  saveLocal(); scheduleSyncToSheets(); updateTasksBadge();
+  closeModal(); render();
+  toast(`Job ${j.jobNum} created — deposit $${deposit.toLocaleString()} recorded`);
+}
+
+function toggleCloseout(jobId, itemIndex) {
+  const j = jobs.find(x=>x.id===jobId);
+  if (!j) return;
+  if (!j.closeout) j.closeout = [
+    {text:'All punchlist items resolved',done:false},
+    {text:'Final inspection passed',done:false},
+    {text:'All hours & material costs logged',done:false},
+    {text:'Allowances reconciled / credited',done:false},
+    {text:'Final invoice sent',done:false},
+    {text:'Payment received',done:false},
+    {text:'Google review requested',done:false},
+  ];
+  j.closeout[itemIndex].done = !j.closeout[itemIndex].done;
+  // Auto-advance to Complete if all done
+  if (j.closeout.every(i=>i.done) && j.stage==='Punch list') {
+    j.stage = 'Complete';
+    saveLocal(); scheduleSyncToSheets(); closeModal(); render();
+    toast('🎉 Job complete — well done!');
+    return;
+  }
+  saveLocal(); scheduleSyncToSheets();
+  openEdit(jobId);
+}
+function advanceStage(id) {
+  const j=jobs.find(j=>j.id===id), ns=nextStage(j);
+  if (!ns) return;
+  const targetStage = ns==='Awarded' ? 'Deposit received' : ns;
+  if (ns==='Awarded') j.type='job';
+  j.stage = targetStage;
+  j.days = 0;
+  // Auto-assign proposal number when bid is sent
+  if (targetStage==='Bid sent' && !j.propNum) {
+    j.propNum = genPropNum();
+    toast('Moved to Bid sent — ' + j.propNum + ' assigned');
+  } else {
+    toast('Moved to ' + targetStage);
+  }
+  closeModal(); render(); scheduleSyncToSheets();
+}
 function delJob(id) {
   if(!confirm('Remove this job?'))return;
   jobs=jobs.filter(j=>j.id!==id);
