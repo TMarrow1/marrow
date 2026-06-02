@@ -401,10 +401,52 @@ function getSampleJobs(){return[{id:1,type:'lead',name:'Henderson – kitchen re
 function getSampleTasks(){return[{id:1,cat:'job',jobId:5,jobName:'Taylor – service upgrade',title:'Pull permit for service upgrade',pri:'high',day:'Mon',done:false,notes:'Submit online at city portal.',checklist:[{text:'Confirm address w/ GC',done:true},{text:'Fill out permit form',done:false},{text:'Submit & pay fee',done:false}]},{id:2,cat:'job',jobId:6,jobName:'Riverside office TI',title:'Order 1" EMT — Riverside',pri:'high',day:'Mon',done:false,notes:'',checklist:[]},{id:3,cat:'office',jobId:null,jobName:'',title:'Send invoice — Taylor rough in',pri:'high',day:'Tue',done:false,notes:'',checklist:[]},{id:4,cat:'office',jobId:null,jobName:'',title:'Follow up on Crestwood bid',pri:'med',day:'Wed',done:false,notes:'Left voicemail 5/22. Try again.',checklist:[]},{id:5,cat:'general',jobId:null,jobName:'',title:'Clean out van / restock materials',pri:'',day:'Thu',done:false,notes:'',checklist:[{text:'Pull empty boxes',done:false},{text:'Restock wire nuts & staples',done:false},{text:'Restock GFCI & breakers',done:false}]},{id:6,cat:'office',jobId:null,jobName:'',title:'Update estimating spreadsheet',pri:'med',day:'Fri',done:false,notes:'',checklist:[{text:'Fix demo section totals',done:false},{text:'Add labor rate column',done:false}]},{id:7,cat:'general',jobId:null,jobName:'',title:'Schedule apprentice hours review',pri:'',day:'',done:false,notes:'',checklist:[]}];}
 function getSampleBlocks(){return[{id:1,type:'job',title:'Riverside office TI',jobId:6,dayKey:weekKey(0,'Mon'),hours:8,startTime:'7:00',notes:'Home runs to panel',taskId:null},{id:2,type:'job',title:'Riverside office TI',jobId:6,dayKey:weekKey(0,'Tue'),hours:8,startTime:'7:00',notes:'',taskId:null},{id:3,type:'office',title:'Invoicing & follow-ups',jobId:null,dayKey:weekKey(0,'Tue'),hours:1,startTime:'5:30',notes:'',taskId:null},{id:4,type:'matrun',title:'Supply house run',jobId:null,dayKey:weekKey(0,'Wed'),hours:1.5,startTime:'6:30',notes:'Taylor panel + EMT',taskId:null},{id:5,type:'job',title:'Taylor – service upgrade',jobId:5,dayKey:weekKey(0,'Wed'),hours:6,startTime:'8:00',notes:'',taskId:null},{id:6,type:'job',title:'Chen – bathroom circuits',jobId:7,dayKey:weekKey(0,'Thu'),hours:8,startTime:'7:00',notes:'Trim day',taskId:null},{id:7,type:'buffer',title:'Estimate + admin',jobId:null,dayKey:weekKey(0,'Fri'),hours:3,startTime:'7:00',notes:'Crestwood estimate',taskId:null},{id:8,type:'job',title:'Garcia – punch list',jobId:10,dayKey:weekKey(0,'Fri'),hours:4,startTime:'10:00',notes:'',taskId:null}];}
 
-// Sync
+// ── SYNC ─────────────────────────────────────────────────────────────────────
+// NOW INCLUDES: Jobs, Materials, Tasks, SchedBlocks
 function setSyncStatus(s,m){const el=document.getElementById('sync-status'),t=document.getElementById('sync-text');el.className='sync-status sync-'+s;t.textContent=m;}
-async function syncToSheets(){setSyncStatus('pending','Saving...');try{const jr=jobs.map(j=>[j.id,j.type,j.name,j.stage,j.next||'',j.blocker||'',j.value||0,j.days||0]);const mr=[];jobs.forEach(j=>{(j.mats||[]).forEach(m=>mr.push([j.id,m.id,m.text,m.ordered?'TRUE':'FALSE']));});await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Jobs',values:[['id','type','name','stage','next','blocker','value','days'],...jr]})});await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Materials',values:mr.length?[['jobId','id','text','ordered'],...mr]:[['jobId','id','text','ordered']]})});setSyncStatus('ok','Synced');}catch(e){setSyncStatus('err','Offline');}}
-async function loadFromSheets(){setSyncStatus('pending','Loading...');try{const jr=await fetch(SCRIPT_URL+'?sheet=Jobs');const jd=await jr.json();const mr=await fetch(SCRIPT_URL+'?sheet=Materials');const md=await mr.json();const rows=jd.slice(1),mrows=md.slice(1);if(rows.length){const sj=JSON.parse(localStorage.getItem('me_jobs')||'[]');jobs=rows.map(r=>{const ex=sj.find(j=>j.id===(parseInt(r[0])||0));return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]}; }).filter(j=>j.id&&j.name);mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]==='TRUE'});});nextId=Math.max(...jobs.map(j=>j.id),0)+1;saveLocal();}setSyncStatus('ok','Synced');render();updateTasksBadge();}catch(e){setSyncStatus('err','Offline');loadLocal();render();updateTasksBadge();}}
+
+async function syncToSheets(){
+  setSyncStatus('pending','Saving...');
+  try{
+    const jr=jobs.map(j=>[j.id,j.type,j.name,j.stage,j.next||'',j.blocker||'',j.value||0,j.days||0]);
+    const mr=[];
+    jobs.forEach(j=>{(j.mats||[]).forEach(m=>mr.push([j.id,m.id,m.text,m.ordered?'TRUE':'FALSE']));});
+    const tr=tasks.map(t=>[t.id,t.cat,t.jobId||'',t.jobName||'',t.title,t.pri||'',t.day||'',t.done?'TRUE':'FALSE',t.notes||'',JSON.stringify(t.checklist||[])]);
+    const br=schedBlocks.map(b=>[b.id,b.type,b.title,b.jobId||'',b.dayKey,b.hours||0,b.startTime||'',b.notes||'',b.taskId||'']);
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Jobs',values:[['id','type','name','stage','next','blocker','value','days'],...jr]})});
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Materials',values:mr.length?[['jobId','id','text','ordered'],...mr]:[['jobId','id','text','ordered']]})});
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Tasks',values:[['id','cat','jobId','jobName','title','pri','day','done','notes','checklist'],...tr]})});
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'SchedBlocks',values:[['id','type','title','jobId','dayKey','hours','startTime','notes','taskId'],...br]})});
+    setSyncStatus('ok','Synced');
+  }catch(e){setSyncStatus('err','Offline');}
+}
+
+async function loadFromSheets(){
+  setSyncStatus('pending','Loading...');
+  try{
+    const jr=await fetch(SCRIPT_URL+'?sheet=Jobs');const jd=await jr.json();
+    const mr=await fetch(SCRIPT_URL+'?sheet=Materials');const md=await mr.json();
+    const tr=await fetch(SCRIPT_URL+'?sheet=Tasks');const td=await tr.json();
+    const bfr=await fetch(SCRIPT_URL+'?sheet=SchedBlocks');const bd=await bfr.json();
+    const rows=jd.slice(1),mrows=md.slice(1),trows=td.slice(1),brows=bd.slice(1);
+    if(rows.length){
+      const sj=JSON.parse(localStorage.getItem('me_jobs')||'[]');
+      jobs=rows.map(r=>{const ex=sj.find(j=>j.id===(parseInt(r[0])||0));return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]}; }).filter(j=>j.id&&j.name);
+      mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]==='TRUE'});});
+      nextId=Math.max(...jobs.map(j=>j.id),0)+1;
+    }
+    if(trows.length){
+      tasks=trows.map(r=>{let cl=[];try{cl=JSON.parse(r[9]||'[]');}catch(e){}return{id:parseInt(r[0])||0,cat:r[1]||'general',jobId:r[2]?parseInt(r[2]):null,jobName:r[3]||'',title:r[4]||'',pri:r[5]||'',day:r[6]||'',done:r[7]==='TRUE',notes:r[8]||'',checklist:cl};}).filter(t=>t.id&&t.title);
+      taskNextId=Math.max(...tasks.map(t=>t.id),0)+1;
+    }
+    if(brows.length){
+      schedBlocks=brows.map(r=>({id:parseInt(r[0])||0,type:r[1]||'job',title:r[2]||'',jobId:r[3]?parseInt(r[3]):null,dayKey:r[4]||'',hours:parseFloat(r[5])||0,startTime:r[6]||'',notes:r[7]||'',taskId:r[8]?parseInt(r[8]):null})).filter(b=>b.id&&b.dayKey);
+      blockNextId=Math.max(...schedBlocks.map(b=>b.id),0)+1;
+    }
+    saveLocal();setSyncStatus('ok','Synced');render();updateTasksBadge();
+  }catch(e){setSyncStatus('err','Offline');loadLocal();render();updateTasksBadge();}
+}
+
 function scheduleSyncToSheets(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>{saveLocal();syncToSheets();},1500);}
 
 // Pipeline helpers
@@ -476,12 +518,12 @@ function taskItemHTML(t){
   const exp=expandedTasks.has(t.id),dc=(t.checklist||[]).filter(c=>c.done).length,tc=(t.checklist||[]).length;
   return`<div class="task-item ${t.done?'done-item':''}" id="task-item-${t.id}"><div class="task-top-row"><div class="task-cb-wrap"><div class="task-cb ${t.done?'checked':''}" onclick="toggleTaskDone(${t.id})"></div></div><div class="task-body"><div class="task-title-text ${t.done?'struck':''}">${t.title}</div><div class="task-pills"><span class="tpill ${catPillClass(t.cat)}">${catLabel(t.cat)}</span>${t.jobName&&t.cat==='job'?`<span class="tpill tpill-job-name">${t.jobName}</span>`:''} ${t.pri==='high'?'<span class="tpill tpill-pri-high">urgent</span>':t.pri==='med'?'<span class="tpill tpill-pri-med">medium</span>':''}${t.day?`<span class="tpill tpill-day">${t.day}</span>`:''}${tc?`<span class="task-progress">${dc}/${tc}</span>`:''}</div></div><div class="task-actions-row"><button class="task-icon-btn" onclick="toggleTaskExpand(${t.id})">${exp?'▲':'▼'}</button><button class="task-icon-btn" onclick="openEditTask(${t.id})">✎</button><button class="task-icon-btn" onclick="deleteTask(${t.id})" style="color:var(--red)">×</button></div></div>${exp?`<div class="task-expand">${t.notes?`<div class="task-notes-text">${t.notes}</div>`:''}${tc?`<ul class="checklist">${(t.checklist||[]).map((cl,ci)=>`<li class="cl-item ${cl.done?'cl-done':''}" id="cl-row-${t.id}-${ci}"><div class="cl-box ${cl.done?'cl-done-box':''}" onclick="toggleChecklist(${t.id},${ci})"></div><span id="cl-lbl-${t.id}-${ci}" onclick="toggleChecklist(${t.id},${ci})">${cl.text}</span><span class="cl-edit" onclick="event.stopPropagation();startEditCL(${t.id},${ci})">✎</span></li>`).join('')}</ul>`:''}  <div class="cl-add-row"><input class="field-input" id="cl-inp-${t.id}" placeholder="Add checklist item..." onkeydown="if(event.key==='Enter')addChecklistItem(${t.id})"><button class="cl-add-btn" onclick="addChecklistItem(${t.id})">+ Add</button></div></div>`:''}</div>`;
 }
-function toggleTaskDone(id){const t=tasks.find(x=>x.id===id);if(t)t.done=!t.done;saveLocal();updateTasksBadge();renderTasks();}
+function toggleTaskDone(id){const t=tasks.find(x=>x.id===id);if(t)t.done=!t.done;saveLocal();scheduleSyncToSheets();updateTasksBadge();renderTasks();}
 function toggleTaskExpand(id){if(expandedTasks.has(id))expandedTasks.delete(id);else expandedTasks.add(id);renderTasks();}
-function toggleChecklist(tid,ci){const t=tasks.find(x=>x.id===tid);if(t&&t.checklist[ci])t.checklist[ci].done=!t.checklist[ci].done;saveLocal();renderTasks();}
-function addChecklistItem(tid){const inp=document.getElementById('cl-inp-'+tid);if(!inp||!inp.value.trim())return;const t=tasks.find(x=>x.id===tid);if(t){if(!t.checklist)t.checklist=[];t.checklist.push({text:inp.value.trim(),done:false});expandedTasks.add(tid);}inp.value='';saveLocal();renderTasks();}
-function startEditCL(tid,ci){const lbl=document.getElementById('cl-lbl-'+tid+'-'+ci);if(!lbl)return;const cur=lbl.textContent,inp=document.createElement('input');inp.className='cl-inline-input';inp.value=cur;lbl.replaceWith(inp);inp.focus();inp.select();function save(){const v=inp.value.trim();if(v){const t=tasks.find(x=>x.id===tid);if(t&&t.checklist[ci])t.checklist[ci].text=v;saveLocal();}renderTasks();}inp.addEventListener('blur',save);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape')renderTasks();});}
-function deleteTask(id){if(!confirm('Remove this task?'))return;tasks=tasks.filter(t=>t.id!==id);expandedTasks.delete(id);saveLocal();updateTasksBadge();renderTasks();}
+function toggleChecklist(tid,ci){const t=tasks.find(x=>x.id===tid);if(t&&t.checklist[ci])t.checklist[ci].done=!t.checklist[ci].done;saveLocal();scheduleSyncToSheets();renderTasks();}
+function addChecklistItem(tid){const inp=document.getElementById('cl-inp-'+tid);if(!inp||!inp.value.trim())return;const t=tasks.find(x=>x.id===tid);if(t){if(!t.checklist)t.checklist=[];t.checklist.push({text:inp.value.trim(),done:false});expandedTasks.add(tid);}inp.value='';saveLocal();scheduleSyncToSheets();renderTasks();}
+function startEditCL(tid,ci){const lbl=document.getElementById('cl-lbl-'+tid+'-'+ci);if(!lbl)return;const cur=lbl.textContent,inp=document.createElement('input');inp.className='cl-inline-input';inp.value=cur;lbl.replaceWith(inp);inp.focus();inp.select();function save(){const v=inp.value.trim();if(v){const t=tasks.find(x=>x.id===tid);if(t&&t.checklist[ci])t.checklist[ci].text=v;saveLocal();scheduleSyncToSheets();}renderTasks();}inp.addEventListener('blur',save);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape')renderTasks();});}
+function deleteTask(id){if(!confirm('Remove this task?'))return;tasks=tasks.filter(t=>t.id!==id);expandedTasks.delete(id);saveLocal();scheduleSyncToSheets();updateTasksBadge();renderTasks();}
 function openAddTask(jid){const j=jid?jobs.find(x=>x.id===jid):null;showTaskModal({id:null,cat:j?'job':'general',jobId:j?j.id:null,jobName:j?j.name:'',title:'',pri:'',day:'',done:false,notes:'',checklist:[]},true);}
 function openEditTask(id){showTaskModal(tasks.find(t=>t.id===id),false);}
 function showTaskModal(task,isNew){
@@ -506,7 +548,7 @@ function saveTask(editId){
   const data={cat,jobId,jobName,title,pri:document.getElementById('tf-pri').value,day:document.getElementById('tf-day').value,notes:document.getElementById('tf-notes').value.trim()};
   if(editId){const t=tasks.find(x=>x.id===editId);Object.assign(t,data);}
   else tasks.unshift({id:taskNextId++,done:false,checklist:[],...data});
-  closeModal();saveLocal();updateTasksBadge();renderTasks();toast(editId?'Task updated':'Task added');
+  closeModal();saveLocal();scheduleSyncToSheets();updateTasksBadge();renderTasks();toast(editId?'Task updated':'Task added');
 }
 
 // ── SCHEDULE ──────────────────────────────────────────────────────────────────
@@ -600,16 +642,16 @@ function saveBlock(editId,linkTaskId){
   const data={type,title,jobId,dayKey:key,hours,startTime,notes,taskId:linkTaskId||null};
   if(editId){const b=schedBlocks.find(x=>x.id===editId);Object.assign(b,data);toast('Block updated');}
   else{schedBlocks.push({id:blockNextId++,...data});toast('Block added');}
-  closeModal();saveLocal();renderSchedule();
+  closeModal();saveLocal();scheduleSyncToSheets();renderSchedule();
 }
-function deleteBlock(id){schedBlocks=schedBlocks.filter(b=>b.id!==id);saveLocal();renderSchedule();}
+function deleteBlock(id){schedBlocks=schedBlocks.filter(b=>b.id!==id);saveLocal();scheduleSyncToSheets();renderSchedule();}
 function quickAssignTaskDay(tid){
   const t=tasks.find(x=>x.id===tid);if(!t)return;
   const dyo=DAYS.map(d=>`<option value="${d}">${d}</option>`).join('');
   document.getElementById('modal-inner').innerHTML=`<h2>Assign day to task</h2><p style="font-size:12px;color:var(--text3);margin-bottom:12px">${t.title}</p><label class="field-label">Day this week</label><select class="field-input" id="quick-day">${dyo}</select><div class="btn-row"><button class="btn btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-save" onclick="doQuickAssign(${tid})">Assign</button></div>`;
   document.getElementById('modal').classList.add('open');
 }
-function doQuickAssign(tid){const t=tasks.find(x=>x.id===tid),day=document.getElementById('quick-day').value;if(t&&day){t.day=day;saveLocal();updateTasksBadge();closeModal();renderSchedule();toast('Task assigned to '+day);}}
+function doQuickAssign(tid){const t=tasks.find(x=>x.id===tid),day=document.getElementById('quick-day').value;if(t&&day){t.day=day;saveLocal();scheduleSyncToSheets();updateTasksBadge();closeModal();renderSchedule();toast('Task assigned to '+day);}}
 
 // Orders
 function renderOrders(){
@@ -680,7 +722,7 @@ function renderRhythm(){
 
 // Settings
 function renderSettings(){
-  document.getElementById('settings-root').innerHTML=`<div class="settings-card"><h3>Labor Rate</h3><div class="settings-row"><label>Your labor rate ($/hr)</label><input class="field-input" type="number" id="labor-rate-input" value="${localStorage.getItem('me_labor_rate')||'65'}" style="width:80px"></div><button class="fab" onclick="saveLaborRate()">Save rate</button></div><div class="settings-card"><h3>Schedule</h3><div class="settings-row"><label>Hours available per day (for utilization %)</label><input class="field-input" type="number" id="hours-day-input" value="${localStorage.getItem('me_hours_day')||'8'}" style="width:80px"></div><button class="fab" onclick="saveHoursPerDay()">Save</button></div><div class="settings-card"><h3>About This App</h3><p style="font-size:13px;color:var(--text2);line-height:1.6">This app saves your jobs locally on this device and syncs to your Google Sheet automatically whenever you make a change.</p></div><div class="settings-card"><h3>Data</h3><div style="display:flex;flex-direction:column;gap:8px"><button class="fab" onclick="loadFromSheets()">↓ Reload from Google Sheets</button><button class="fab" onclick="forceSyncNow()">↑ Force sync to Google Sheets</button><button class="fab" style="color:var(--red);border-color:#F5C6C2" onclick="clearAllData()">Clear all local data</button></div></div><div class="settings-card"><h3>Your Google Sheet</h3><p style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:8px">All your job data syncs here automatically.</p><a href="https://docs.google.com/spreadsheets/d/1mmEFnVmZc0z790S_xyCITkKOTaEgLN2ckLAihyUV_rE" target="_blank" class="fab" style="display:inline-block;text-decoration:none;text-align:center">Open Google Sheet ↗</a></div>`;
+  document.getElementById('settings-root').innerHTML=`<div class="settings-card"><h3>Labor Rate</h3><div class="settings-row"><label>Your labor rate ($/hr)</label><input class="field-input" type="number" id="labor-rate-input" value="${localStorage.getItem('me_labor_rate')||'65'}" style="width:80px"></div><button class="fab" onclick="saveLaborRate()">Save rate</button></div><div class="settings-card"><h3>Schedule</h3><div class="settings-row"><label>Hours available per day (for utilization %)</label><input class="field-input" type="number" id="hours-day-input" value="${localStorage.getItem('me_hours_day')||'8'}" style="width:80px"></div><button class="fab" onclick="saveHoursPerDay()">Save</button></div><div class="settings-card"><h3>About This App</h3><p style="font-size:13px;color:var(--text2);line-height:1.6">This app saves your jobs locally on this device and syncs to your Google Sheet automatically whenever you make a change. Tasks and Schedule blocks now sync across all devices.</p></div><div class="settings-card"><h3>Data</h3><div style="display:flex;flex-direction:column;gap:8px"><button class="fab" onclick="loadFromSheets()">↓ Reload from Google Sheets</button><button class="fab" onclick="forceSyncNow()">↑ Force sync to Google Sheets</button><button class="fab" style="color:var(--red);border-color:#F5C6C2" onclick="clearAllData()">Clear all local data</button></div></div><div class="settings-card"><h3>Your Google Sheet</h3><p style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:8px">All your job data syncs here automatically. You'll need to add Tasks and SchedBlocks tabs to your sheet if they don't exist yet.</p><a href="https://docs.google.com/spreadsheets/d/1mmEFnVmZc0z790S_xyCITkKOTaEgLN2ckLAihyUV_rE" target="_blank" class="fab" style="display:inline-block;text-decoration:none;text-align:center">Open Google Sheet ↗</a></div>`;
 }
 function saveLaborRate(){const v=parseInt(document.getElementById('labor-rate-input').value);if(!v||v<1){toast('Enter a valid rate');return;}localStorage.setItem('me_labor_rate',v);toast('Labor rate saved — $'+v+'/hr');}
 function saveHoursPerDay(){const v=parseInt(document.getElementById('hours-day-input').value);if(!v||v<1){toast('Enter valid hours');return;}localStorage.setItem('me_hours_day',v);toast('Hours per day saved');}
