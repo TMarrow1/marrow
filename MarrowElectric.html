@@ -464,11 +464,15 @@ async function loadFromSheets(){
       schedBlocks=brows.map(r=>({id:parseInt(r[0])||0,type:r[1]||'job',title:r[2]||'',jobId:r[3]?parseInt(r[3]):null,dayKey:r[4]||'',hours:parseFloat(r[5])||0,startTime:r[6]||'',notes:r[7]||'',taskId:r[8]?parseInt(r[8]):null})).filter(b=>b.id&&b.dayKey);
       blockNextId=Math.max(...schedBlocks.map(b=>b.id),0)+1;
     }
-    saveLocal();setSyncStatus('ok','Synced');render();updateTasksBadge();
-  }catch(e){setSyncStatus('err','Offline');loadLocal();render();updateTasksBadge();}
+    saveLocal();window._sheetLoaded=true;setSyncStatus('ok','Synced');render();updateTasksBadge();
+  }catch(e){window._sheetLoaded=true;setSyncStatus('err','Offline');loadLocal();render();updateTasksBadge();}
 }
 
-function scheduleSyncToSheets(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>{saveLocal();syncToSheets();},1500);}
+function scheduleSyncToSheets(){
+  // Don't auto-sync until sheet data has been loaded
+  if(!window._sheetLoaded) return;
+  clearTimeout(syncTimer);syncTimer=setTimeout(()=>{saveLocal();syncToSheets();},1500);
+}
 
 // Pipeline helpers
 function isStalled(j){return STALL.includes(j.stage);}
@@ -785,7 +789,9 @@ function startEditMat(jid,mid){const lbl=document.getElementById('mat-lbl-'+mid)
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this){closeModal();render();}});
 
 // Boot
-loadLocal();setFilter('all');updateTasksBadge();loadFromSheets();
+loadLocal();setFilter('all');updateTasksBadge();
+// Always reload from sheet on startup — sheet is master
+loadFromSheets();
 </script>
 </body>
 </html>
