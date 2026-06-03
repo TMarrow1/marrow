@@ -348,7 +348,7 @@ select.field-input{appearance:none;background-image:url("data:image/svg+xml,%3Cs
 <div class="modal-bg" id="modal"><div class="modal"><div class="modal-handle"></div><div id="modal-inner"></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxIYintIs_PwM08GxCCzH8dUOIhumv9y4ary1dJ5vO5OWP2qqumlKl6HZ0McFwYyJHL/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxICsBl-B4wLnii1306-m591qfGzE11qiQZE9qSe74C8PxGT-kNQ9SLsK4smx0kT9k6/exec';
 const LEAD_STAGES=['Lead','Site visit','Estimating','Bid sent'];
 const JOB_STAGES=['Deposit received','Scheduled','Rough in','Trim','Punch list','Complete'];
 const STALL=['Waiting on client','Waiting on inspection','Waiting on permit','Waiting on material','On hold'];
@@ -405,6 +405,13 @@ function getSampleBlocks(){return[{id:1,type:'job',title:'Riverside office TI',j
 // NOW INCLUDES: Jobs, Materials, Tasks, SchedBlocks
 function setSyncStatus(s,m){const el=document.getElementById('sync-status'),t=document.getElementById('sync-text');el.className='sync-status sync-'+s;t.textContent=m;}
 
+async function writeSheet(sheetName,values){
+  const url=SCRIPT_URL+'?action=write&sheet='+encodeURIComponent(sheetName)+'&data='+encodeURIComponent(JSON.stringify(values));
+  const r=await fetch(url);
+  const d=await r.json();
+  if(d.error)throw new Error(d.error);
+  return d;
+}
 async function syncToSheets(){
   setSyncStatus('pending','Saving...');
   try{
@@ -413,12 +420,12 @@ async function syncToSheets(){
     jobs.forEach(j=>{(j.mats||[]).forEach(m=>mr.push([j.id,m.id,m.text,m.ordered?'TRUE':'FALSE']));});
     const tr=tasks.map(t=>[t.id,t.cat,t.jobId||'',t.jobName||'',t.title,t.pri||'',t.day||'',t.done?'TRUE':'FALSE',t.notes||'',JSON.stringify(t.checklist||[])]);
     const br=schedBlocks.map(b=>[b.id,b.type,b.title,b.jobId||'',b.dayKey,b.hours||0,b.startTime||'',b.notes||'',b.taskId||'']);
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Jobs',values:[['id','type','name','stage','next','blocker','value','days'],...jr]})});
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Materials',values:mr.length?[['jobId','id','text','ordered'],...mr]:[['jobId','id','text','ordered']]})});
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'Tasks',values:[['id','cat','jobId','jobName','title','pri','day','done','notes','checklist'],...tr]})});
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'write',sheet:'SchedBlocks',values:[['id','type','title','jobId','dayKey','hours','startTime','notes','taskId'],...br]})});
+    await writeSheet('Jobs',[['id','type','name','stage','next','blocker','value','days'],...jr]);
+    await writeSheet('Materials',mr.length?[['jobId','id','text','ordered'],...mr]:[['jobId','id','text','ordered']]);
+    await writeSheet('Tasks',[['id','cat','jobId','jobName','title','pri','day','done','notes','checklist'],...tr]);
+    await writeSheet('SchedBlocks',[['id','type','title','jobId','dayKey','hours','startTime','notes','taskId'],...br]);
     setSyncStatus('ok','Synced');
-  }catch(e){setSyncStatus('err','Offline');}
+  }catch(e){setSyncStatus('err','Offline');console.error('Sync error:',e);}
 }
 
 async function loadFromSheets(){
