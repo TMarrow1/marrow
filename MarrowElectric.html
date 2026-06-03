@@ -453,11 +453,11 @@ async function loadFromSheets(){
     if(rows.length){
       const sj=JSON.parse(localStorage.getItem('me_jobs')||'[]');
       jobs=rows.map(r=>{const ex=sj.find(j=>j.id===(parseInt(r[0])||0));return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]}; }).filter(j=>j.id&&j.name);
-      mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]==='TRUE'});});
+      mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]===true||m[3]==='TRUE'||m[3]==='true'});});
       nextId=Math.max(...jobs.map(j=>j.id),0)+1;
     }
     if(trows.length){
-      tasks=trows.map(r=>{let cl=[];try{cl=JSON.parse(r[9]||'[]');}catch(e){}return{id:parseInt(r[0])||0,cat:r[1]||'general',jobId:r[2]?parseInt(r[2]):null,jobName:r[3]||'',title:r[4]||'',pri:r[5]||'',day:r[6]||'',done:r[7]==='TRUE',notes:r[8]||'',checklist:cl};}).filter(t=>t.id&&t.title);
+      tasks=trows.map(r=>{let cl=[];try{cl=JSON.parse(r[9]||'[]');}catch(e){}return{id:parseInt(r[0])||0,cat:r[1]||'general',jobId:r[2]?parseInt(r[2]):null,jobName:r[3]||'',title:r[4]||'',pri:r[5]||'',day:r[6]||'',done:r[7]===true||r[7]==='TRUE'||r[7]==='true',notes:r[8]||'',checklist:cl};}).filter(t=>t.id&&t.title);
       taskNextId=Math.max(...tasks.map(t=>t.id),0)+1;
     }
     if(brows.length){
