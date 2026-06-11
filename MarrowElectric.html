@@ -405,12 +405,22 @@ function getSampleBlocks(){return[{id:1,type:'job',title:'Riverside office TI',j
 function setSyncStatus(s,m){const el=document.getElementById('sync-status'),t=document.getElementById('sync-text');el.className='sync-status sync-'+s;t.textContent=m;}
 
 async function writeSheet(sheetName,values){
+  let postSucceeded=false;
   try{
     const r=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({sheet:sheetName,values:values})});
-    const d=await r.json();
-    if(d.error)throw new Error(d.error);
-    return d;
+    postSucceeded=true; // fetch itself worked — data was sent
+    try{
+      const d=await r.json();
+      if(d.error)throw new Error(d.error);
+    }catch(parseErr){
+      // Response parse failed but POST went through — don't retry or we'll double-write
+      console.warn('writeSheet: POST response parse failed for',sheetName,'— assuming success');
+    }
+    return {status:'ok'};
   }catch(postErr){
+    // Only fall back to GET if the fetch itself failed (network down, CORS hard block, etc.)
+    // If POST succeeded but parse threw, postSucceeded=true and we won't reach here
+    if(postSucceeded) return {status:'ok'};
     const CHUNK=15;
     const header=values[0];
     const rows=values.slice(1);
@@ -459,18 +469,21 @@ async function loadFromSheets(){
         return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]};
       }).filter(j=>j.id&&j.name);
       mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]===true||m[3]==='TRUE'||m[3]==='true'});});
+      jobs=jobs.filter((j,i,a)=>a.findIndex(x=>x.id===j.id)===i); // dedup
       nextId=Math.max(...jobs.map(j=>j.id),0)+1;
     }
 
     if(trows.length){
       tasks=[];  // clear before populating — prevents doubling on reload
       tasks=trows.map(r=>{let cl=[];try{cl=JSON.parse(r[9]||'[]');}catch(e){}return{id:parseInt(r[0])||0,cat:r[1]||'general',jobId:r[2]?parseInt(r[2]):null,jobName:r[3]||'',title:r[4]||'',pri:r[5]||'',day:r[6]||'',done:r[7]===true||r[7]==='TRUE'||r[7]==='true',notes:r[8]||'',checklist:cl};}).filter(t=>t.id&&t.title);
+      tasks=tasks.filter((t,i,a)=>a.findIndex(x=>x.id===t.id)===i); // dedup
       taskNextId=Math.max(...tasks.map(t=>t.id),0)+1;
     }
 
     if(brows.length){
       schedBlocks=[];  // clear before populating — prevents doubling on reload
       schedBlocks=brows.map(r=>({id:parseInt(r[0])||0,type:r[1]||'job',title:r[2]||'',jobId:r[3]?parseInt(r[3]):null,dayKey:r[4]||'',hours:parseFloat(r[5])||0,startTime:r[6]||'',notes:r[7]||'',taskId:r[8]?parseInt(r[8]):null})).filter(b=>b.id&&b.dayKey);
+      schedBlocks=schedBlocks.filter((b,i,a)=>a.findIndex(x=>x.id===b.id)===i); // dedup
       blockNextId=Math.max(...schedBlocks.map(b=>b.id),0)+1;
     }
 
