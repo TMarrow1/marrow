@@ -402,7 +402,6 @@ function getSampleTasks(){return[{id:1,cat:'job',jobId:5,jobName:'Taylor – ser
 function getSampleBlocks(){return[{id:1,type:'job',title:'Riverside office TI',jobId:6,dayKey:weekKey(0,'Mon'),hours:8,startTime:'7:00',notes:'Home runs to panel',taskId:null},{id:2,type:'job',title:'Riverside office TI',jobId:6,dayKey:weekKey(0,'Tue'),hours:8,startTime:'7:00',notes:'',taskId:null},{id:3,type:'office',title:'Invoicing & follow-ups',jobId:null,dayKey:weekKey(0,'Tue'),hours:1,startTime:'5:30',notes:'',taskId:null},{id:4,type:'matrun',title:'Supply house run',jobId:null,dayKey:weekKey(0,'Wed'),hours:1.5,startTime:'6:30',notes:'Taylor panel + EMT',taskId:null},{id:5,type:'job',title:'Taylor – service upgrade',jobId:5,dayKey:weekKey(0,'Wed'),hours:6,startTime:'8:00',notes:'',taskId:null},{id:6,type:'job',title:'Chen – bathroom circuits',jobId:7,dayKey:weekKey(0,'Thu'),hours:8,startTime:'7:00',notes:'Trim day',taskId:null},{id:7,type:'buffer',title:'Estimate + admin',jobId:null,dayKey:weekKey(0,'Fri'),hours:3,startTime:'7:00',notes:'Crestwood estimate',taskId:null},{id:8,type:'job',title:'Garcia – punch list',jobId:10,dayKey:weekKey(0,'Fri'),hours:4,startTime:'10:00',notes:'',taskId:null}];}
 
 // ── SYNC ─────────────────────────────────────────────────────────────────────
-// NOW INCLUDES: Jobs, Materials, Tasks, SchedBlocks
 function setSyncStatus(s,m){const el=document.getElementById('sync-status'),t=document.getElementById('sync-text');el.className='sync-status sync-'+s;t.textContent=m;}
 
 async function writeSheet(sheetName,values){
@@ -450,26 +449,46 @@ async function loadFromSheets(){
     const tr=await fetch(SCRIPT_URL+'?sheet=Tasks');const td=await tr.json();
     const bfr=await fetch(SCRIPT_URL+'?sheet=SchedBlocks');const bd=await bfr.json();
     const rows=jd.slice(1),mrows=md.slice(1),trows=td.slice(1),brows=bd.slice(1);
+
     if(rows.length){
+      // ── FIX: preserve timeEntries/matCosts from local, then replace jobs array cleanly ──
       const sj=JSON.parse(localStorage.getItem('me_jobs')||'[]');
-      jobs=rows.map(r=>{const ex=sj.find(j=>j.id===(parseInt(r[0])||0));return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]}; }).filter(j=>j.id&&j.name);
+      jobs=[];  // clear before populating — prevents doubling on reload
+      jobs=rows.map(r=>{
+        const ex=sj.find(j=>j.id===(parseInt(r[0])||0));
+        return{id:parseInt(r[0])||0,type:r[1]||'job',name:r[2]||'',stage:r[3]||'Lead',next:r[4]||'',blocker:r[5]||'',value:parseInt(r[6])||0,days:parseInt(r[7])||0,mats:[],timeEntries:ex?(ex.timeEntries||[]):[],matCosts:ex?(ex.matCosts||[]):[]};
+      }).filter(j=>j.id&&j.name);
       mrows.forEach(m=>{const j=jobs.find(j=>j.id===parseInt(m[0]));if(j)j.mats.push({id:m[1],text:m[2]||'',ordered:m[3]===true||m[3]==='TRUE'||m[3]==='true'});});
       nextId=Math.max(...jobs.map(j=>j.id),0)+1;
     }
+
     if(trows.length){
+      tasks=[];  // clear before populating — prevents doubling on reload
       tasks=trows.map(r=>{let cl=[];try{cl=JSON.parse(r[9]||'[]');}catch(e){}return{id:parseInt(r[0])||0,cat:r[1]||'general',jobId:r[2]?parseInt(r[2]):null,jobName:r[3]||'',title:r[4]||'',pri:r[5]||'',day:r[6]||'',done:r[7]===true||r[7]==='TRUE'||r[7]==='true',notes:r[8]||'',checklist:cl};}).filter(t=>t.id&&t.title);
       taskNextId=Math.max(...tasks.map(t=>t.id),0)+1;
     }
+
     if(brows.length){
+      schedBlocks=[];  // clear before populating — prevents doubling on reload
       schedBlocks=brows.map(r=>({id:parseInt(r[0])||0,type:r[1]||'job',title:r[2]||'',jobId:r[3]?parseInt(r[3]):null,dayKey:r[4]||'',hours:parseFloat(r[5])||0,startTime:r[6]||'',notes:r[7]||'',taskId:r[8]?parseInt(r[8]):null})).filter(b=>b.id&&b.dayKey);
       blockNextId=Math.max(...schedBlocks.map(b=>b.id),0)+1;
     }
-    saveLocal();window._sheetLoaded=true;setSyncStatus('ok','Synced');render();updateTasksBadge();
-  }catch(e){window._sheetLoaded=true;setSyncStatus('err','Offline');loadLocal();render();updateTasksBadge();}
+
+    saveLocal();
+    window._sheetLoaded=true;
+    setSyncStatus('ok','Synced');
+    render();
+    updateTasksBadge();
+  }catch(e){
+    window._sheetLoaded=true;
+    setSyncStatus('err','Offline');
+    loadLocal();
+    render();
+    updateTasksBadge();
+  }
 }
 
 function scheduleSyncToSheets(){
-  // Don't auto-sync until sheet data has been loaded
   if(!window._sheetLoaded) return;
   clearTimeout(syncTimer);syncTimer=setTimeout(()=>{saveLocal();syncToSheets();},1500);
 }
@@ -788,9 +807,12 @@ function addMat(jid){const inp=document.getElementById('mat-input'),t=inp.value.
 function startEditMat(jid,mid){const lbl=document.getElementById('mat-lbl-'+mid);if(!lbl)return;const cur=lbl.textContent,inp=document.createElement('input');inp.className='mat-inline-input';inp.value=cur;lbl.replaceWith(inp);inp.focus();inp.select();function save(){const v=inp.value.trim();if(v){const j=jobs.find(x=>x.id===jid),m=(j.mats||[]).find(m=>m.id===mid);if(m)m.text=v;scheduleSyncToSheets();}renderMatModal();}inp.addEventListener('blur',save);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape')renderMatModal();});}
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this){closeModal();render();}});
 
-// Boot
-loadLocal();setFilter('all');updateTasksBadge();
-// Always reload from sheet on startup — sheet is master
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+// loadLocal first so UI renders immediately from cache
+// loadFromSheets then overwrites with authoritative sheet data (arrays cleared before populating)
+loadLocal();
+setFilter('all');
+updateTasksBadge();
 loadFromSheets();
 </script>
 </body>
