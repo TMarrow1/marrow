@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Marrow Electric — Job Walk</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3450;
+    --accent: #e8a020;
+    --accent2: #f0c060;
+    --text: #e8eaf0;
+    --muted: #7a8099;
+    --danger: #e05050;
+    --good: #40b870;
+    --radius: 10px;
+    --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bolt {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .brand-text {
+    line-height: 1.1;
+  }
+  .brand-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .header-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+
+  /* STEP NAV */
+  .step-nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .step-nav::-webkit-scrollbar { display: none; }
+  .step-tab {
+    flex: 1;
+    min-width: 64px;
+    padding: 10px 4px 9px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .step-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .step-tab .tab-icon { font-size: 14px; display: block; margin-bottom: 2px; }
+
+  /* CONTENT */
+  .content { padding: 16px; max-width: 520px; margin: 0 auto; }
+
+  /* SECTION */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  /* FORM ELEMENTS */
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 5px;
+    display: block;
+    letter-spacing: 0.03em;
+  }
+  input[type="text"], input[type="date"], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="text"]:focus, input[type="date"]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  textarea { resize: none; min-height: 80px; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8099' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+  /* JOB TYPE PILLS */
+  .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .pill.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,160,32,0.1);
+  }
+
+  /* CONDITION BUTTONS */
+  .condition-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .condition-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .condition-label { font-size: 14px; color: var(--text); flex: 1; padding-right: 12px; }
+  .condition-label small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .btn-group { display: flex; gap: 6px; }
+  .cond-btn {
+    padding: 6px 11px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .cond-btn.sel-good { border-color: var(--good); color: var(--good); background: rgba(64,184,112,0.1); }
+  .cond-btn.sel-warn { border-color: var(--accent); color: var(--accent); background: rgba(232,160,32,0.1); }
+  .cond-btn.sel-bad { border-color: var(--danger); color: var(--danger); background: rgba(224,80,80,0.1); }
+
+  /* SCOPE ITEMS */
+  .scope-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .scope-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .scope-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .scope-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .scope-check.checked::after { content: '✓'; font-size: 12px; font-weight: 800; color: #000; }
+  .scope-name { flex: 1; font-size: 14px; color: var(--text); }
+  .scope-name small { display: block; font-size: 11px; color: var(--muted); }
+  .qty-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  .qty-btn {
+    width: 30px;
+    height: 30px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+  }
+  .qty-btn:first-child { border-radius: 6px 0 0 6px; }
+  .qty-btn:last-child { border-radius: 0 6px 6px 0; }
+  .qty-val {
+    width: 32px;
+    height: 30px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-left: none;
+    border-right: none;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* FLAGS */
+  .flag-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flag-row:last-child { border-bottom: none; }
+  .flag-toggle {
+    width: 42px;
+    height: 24px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+    margin-top: 2px;
+  }
+  .flag-toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--muted);
+    top: 2px;
+    left: 2px;
+    transition: all 0.15s;
+  }
+  .flag-toggle.on { background: rgba(232,160,32,0.2); border-color: var(--accent); }
+  .flag-toggle.on::after { background: var(--accent); left: 20px; }
+  .flag-info { flex: 1; }
+  .flag-label { font-size: 14px; color: var(--text); font-weight: 500; }
+  .flag-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .flag-note { margin-top: 8px; display: none; }
+  .flag-note.show { display: block; }
+  .flag-note input {
+    font-size: 13px;
+    padding: 8px 11px;
+  }
+
+  /* NOTES AREA */
+  .notes-section { margin-top: 4px; }
+
+  /* OUTPUT */
+  .output-card {
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .output-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+  .copy-btn:active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .output-body { font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .output-body strong { color: var(--accent2); }
+
+  /* ESTIMATE BAR */
+  .est-bar {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+  .est-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .est-range {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  .est-range span { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .est-breakdown { margin-top: 10px; }
+  .est-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 4px 0;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .est-line strong { color: var(--text); }
+
+  /* GENERATE BTN */
+  .gen-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .gen-btn:active { opacity: 0.85; }
+
+  /* NAV BUTTONS */
+  .nav-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: var(--radius);
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .nav-btn.back { background: var(--surface2); color: var(--muted); }
+  .nav-btn.next { background: var(--accent); color: #000; }
+  .nav-btn.single { flex: 1; background: var(--accent); color: #000; }
+
+  /* HIDDEN */
+  .hidden { display: none !important; }
+
+  /* CUSTOM ITEM */
+  .custom-item-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .custom-item-row input { flex: 1; }
+  .remove-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--danger);
+    width: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .add-custom {
+    width: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-custom:active { border-color: var(--accent); color: var(--accent); }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 4px 0 12px; }
+
+  /* BADGE */
+  .badge {
+    display: inline-block;
+    background: rgba(232,160,32,0.15);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="bolt">⚡</div>
+    <div class="brand-text">
+      <div class="brand-name">Marrow Electric</div>
+      <div class="brand-sub">Job Walk Form</div>
+    </div>
+  </div>
+  <button class="header-btn" onclick="resetForm()">New Walk</button>
+</div>
+
+<div class="step-nav">
+  <div class="step-tab active" onclick="goTo(0)" id="tab0"><span class="tab-icon">📋</span>Job Info</div>
+  <div class="step-tab" onclick="goTo(1)" id="tab1"><span class="tab-icon">🏗️</span>Site</div>
+  <div class="step-tab" onclick="goTo(2)" id="tab2"><span class="tab-icon">⚡</span>Scope</div>
+  <div class="step-tab" onclick="goTo(3)" id="tab3"><span class="tab-icon">⚠️</span>Flags</div>
+  <div class="step-tab" onclick="goTo(4)" id="tab4"><span class="tab-icon">📊</span>Summary</div>
+</div>
+
+<div class="content">
+
+  <!-- SECTION 0: JOB INFO -->
+  <div class="section active" id="sec0">
+    <div class="card">
+      <div class="card-title">Customer & Location</div>
+      <div class="field">
+        <label class="label">Customer Name</label>
+        <input type="text" id="cust-name" placeholder="Pete Demaras" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="label">Address / Location</label>
+        <input type="text" id="cust-addr" placeholder="123 Main St, Lolo, MT" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="label">Date of Walk</label>
+        <input type="date" id="walk-date">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Job Type</div>
+      <div class="pill-group" id="job-type-pills">
+        <div class="pill" onclick="selectJobType(this,'commercial-ti')">Commercial TI</div>
+        <div class="pill" onclick="selectJobType(this,'residential-remodel')">Residential Remodel</div>
+        <div class="pill" onclick="selectJobType(this,'shop-outbuilding')">Shop / Outbuilding</div>
+        <div class="pill" onclick="selectJobType(this,'service-upgrade')">Service Upgrade</div>
+        <div class="pill" onclick="selectJobType(this,'new-construction')">New Construction</div>
+        <div class="pill" onclick="selectJobType(this,'service-call')">Service / Repair</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Project Overview</div>
+      <div class="field">
+        <label class="label">What's the customer asking for?</label>
+        <textarea id="cust-description" placeholder="e.g. Full electrical for new 50x30 shop — panel, lighting, outlets, 240V for welder"></textarea>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="nav-btn single next" onclick="goTo(1)">Next: Site Conditions →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 1: SITE CONDITIONS -->
+  <div class="section" id="sec1">
+
+    <div class="card">
+      <div class="card-title">Service & Panel</div>
+      <div class="condition-row">
+        <div class="condition-label">Existing service size<small>Estimated amperage</small></div>
+        <select id="svc-size" style="width:110px;flex-shrink:0">
+          <option value="">—</option>
+          <option>100A</option>
+          <option>150A</option>
+          <option>200A</option>
+          <option>320A</option>
+          <option>400A</option>
+          <option>None/New</option>
+        </select>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Panel condition<small>Space, breakers, labeling</small></div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'panel','good')">Good</button>
+          <button class="cond-btn" onclick="setCond(this,'panel','warn')">Fair</button>
+          <button class="cond-btn" onclick="setCond(this,'panel','bad')">Poor</button>
+        </div>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Breaker slots available<small>For new circuits</small></div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'slots','good')">Plenty</button>
+          <button class="cond-btn" onclick="setCond(this,'slots','warn')">A few</button>
+          <button class="cond-btn" onclick="setCond(this,'slots','bad')">Full</button>
+        </div>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Grounding / bonding<small>Visible ground rod, bonding</small></div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'ground','good')">Good</button>
+          <button class="cond-btn" onclick="setCond(this,'ground','warn')">Unknown</button>
+          <button class="cond-btn" onclick="setCond(this,'ground','bad')">Deficient</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Access & Conditions</div>
+      <div class="condition-row">
+        <div class="condition-label">Wall / ceiling access<small>Open, drywall, plaster, concrete</small></div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'access','good')">Open</button>
+          <button class="cond-btn" onclick="setCond(this,'access','warn')">Limited</button>
+          <button class="cond-btn" onclick="setCond(this,'access','bad')">Difficult</button>
+        </div>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Attic / crawl space<small>For routing overhead/underground</small></div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'attic','good')">Good</button>
+          <button class="cond-btn" onclick="setCond(this,'attic','warn')">Tight</button>
+          <button class="cond-btn" onclick="setCond(this,'attic','bad')">None/Bad</button>
+        </div>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Overall existing wiring quality</div>
+        <div class="btn-group">
+          <button class="cond-btn" onclick="setCond(this,'wiring','good')">Good</button>
+          <button class="cond-btn" onclick="setCond(this,'wiring','warn')">Mixed</button>
+          <button class="cond-btn" onclick="setCond(this,'wiring','bad')">Sketchy</button>
+        </div>
+      </div>
+      <div class="condition-row">
+        <div class="condition-label">Building age / construction type</div>
+        <select id="bldg-age" style="width:130px;flex-shrink:0">
+          <option value="">—</option>
+          <option>New / &lt;5 yrs</option>
+          <option>5–20 yrs</option>
+          <option>20–50 yrs</option>
+          <option>50+ yrs</option>
+          <option>Unknown</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Site Notes</div>
+      <div class="field">
+        <textarea id="site-notes" placeholder="Parking, site access, customer on-site, utility location, special conditions..."></textarea>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="nav-btn back" onclick="goTo(0)">← Back</button>
+      <button class="nav-btn next" onclick="goTo(2)">Next: Scope →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SCOPE -->
+  <div class="section" id="sec2">
+
+    <!-- SERVICE / DISTRIBUTION -->
+    <div class="card">
+      <div class="card-title">Service & Distribution</div>
+      <div id="scope-service">
+        <!-- dynamically shown -->
+      </div>
+    </div>
+
+    <!-- WIRING / CIRCUITS -->
+    <div class="card">
+      <div class="card-title">Circuits & Wiring</div>
+      <div id="scope-circuits"></div>
+    </div>
+
+    <!-- DEVICES & OUTLETS -->
+    <div class="card">
+      <div class="card-title">Devices & Outlets</div>
+      <div id="scope-devices"></div>
+    </div>
+
+    <!-- LIGHTING -->
+    <div class="card">
+      <div class="card-title">Lighting</div>
+      <div id="scope-lighting"></div>
+    </div>
+
+    <!-- SPECIALTY -->
+    <div class="card">
+      <div class="card-title">Specialty / Equipment</div>
+      <div id="scope-specialty"></div>
+    </div>
+
+    <!-- CUSTOM ITEMS -->
+    <div class="card">
+      <div class="card-title">Custom Items <span class="badge">Add Anything</span></div>
+      <div id="custom-items-list"></div>
+      <button class="add-custom" onclick="addCustomItem()">+ Add custom scope item</button>
+    </div>
+
+    <div class="nav-btns">
+      <button class="nav-btn back" onclick="goTo(1)">← Back</button>
+      <button class="nav-btn next" onclick="goTo(3)">Next: Flags →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: FLAGS -->
+  <div class="section" id="sec3">
+
+    <div class="card">
+      <div class="card-title">Complexity & Risk Flags</div>
+      <div id="flags-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Photo Reminders</div>
+      <div class="field">
+        <textarea id="photo-notes" placeholder="What to photograph before leaving site: panel, existing wiring, tricky runs, equipment tags, etc."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Field Notes</div>
+      <div class="field">
+        <textarea id="field-notes" placeholder="Anything else — customer preferences, timing, things to confirm, materials to price out..."></textarea>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="nav-btn back" onclick="goTo(2)">← Back</button>
+      <button class="nav-btn next" onclick="generateSummary(); goTo(4);">Generate Summary →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: SUMMARY -->
+  <div class="section" id="sec4">
+
+    <button class="gen-btn" onclick="generateSummary()">🔄 Refresh Summary</button>
+
+    <div class="est-bar" id="est-bar">
+      <div class="est-label">Estimated Field Hours (2-man crew)</div>
+      <div class="est-range" id="est-range">—</div>
+      <div class="est-breakdown" id="est-breakdown"></div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-title">Field Summary</div>
+        <button class="copy-btn" onclick="copyOutput('field-summary-text')">Copy</button>
+      </div>
+      <div class="output-body" id="field-summary-text">Fill out the form and tap Generate Summary.</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-title">Estimate Starting Point</div>
+        <button class="copy-btn" onclick="copyOutput('estimate-start-text')">Copy</button>
+      </div>
+      <div class="output-body" id="estimate-start-text">—</div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="nav-btn back" onclick="goTo(3)">← Back to Flags</button>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentStep = 0;
+let selectedJobType = '';
+let conditions = {};
+let scopeQtys = {};
+let customItems = [];
+let flags = {};
+
+// ─── SCOPE DATABASE ──────────────────────────────────────────────────────────
+const scopeDB = {
+  service: [
+    { id:'svc-panel-new', label:'New panel (100–200A)', sub:'', hrs:8 },
+    { id:'svc-panel-swap', label:'Panel swap / like-for-like', sub:'', hrs:5 },
+    { id:'svc-upgrade-400', label:'Service upgrade to 400A', sub:'Includes new meter base', hrs:14 },
+    { id:'svc-meter-base', label:'Meter base replacement', sub:'', hrs:3 },
+    { id:'svc-sub-panel', label:'Sub-panel install', sub:'Includes feeder run', hrs:6 },
+    { id:'svc-temp-power', label:'Temp power setup', sub:'', hrs:3 },
+    { id:'svc-gen-interlock', label:'Generator interlock + inlet', sub:'', hrs:4 },
+    { id:'svc-transfer-switch', label:'Transfer switch', sub:'Manual or ATS', hrs:6 },
+  ],
+  circuits: [
+    { id:'cir-20a-general', label:'20A general circuit', sub:'From panel to location', hrs:2.5 },
+    { id:'cir-20a-kitchen', label:'20A kitchen/bath circuit', sub:'GFCI protected', hrs:3 },
+    { id:'cir-30a-dryer', label:'30A dryer circuit', sub:'', hrs:2.5 },
+    { id:'cir-40a-range', label:'40A range/oven circuit', sub:'', hrs:3.5 },
+    { id:'cir-50a-welder', label:'50A welder / 240V equipment', sub:'', hrs:4 },
+    { id:'cir-50a-ev', label:'50A EV charger circuit', sub:'', hrs:3.5 },
+    { id:'cir-30a-ac', label:'30A A/C / HVAC circuit', sub:'', hrs:2.5 },
+    { id:'cir-20a-bathroom', label:'20A bathroom circuit', sub:'', hrs:2.5 },
+    { id:'cir-emt-run', label:'EMT conduit run (per 50ft)', sub:'Commercial/exposed', hrs:3 },
+    { id:'cir-underground', label:'Underground run (per 50ft)', sub:'Direct bury or conduit', hrs:4 },
+  ],
+  devices: [
+    { id:'dev-duplex', label:'Duplex outlet (rough-in & device)', sub:'', hrs:0.75 },
+    { id:'dev-gfci', label:'GFCI outlet (new rough-in)', sub:'', hrs:1.5 },
+    { id:'dev-gfci-replace', label:'GFCI replacement', sub:'Existing box', hrs:0.5 },
+    { id:'dev-switch-single', label:'Switch (single-pole)', sub:'', hrs:0.75 },
+    { id:'dev-switch-3way', label:'3-way switch set', sub:'Both switches', hrs:2 },
+    { id:'dev-outlet-240', label:'240V outlet / receptacle', sub:'NEMA 6-20, 6-50, 14-30', hrs:1 },
+    { id:'dev-usb-outlet', label:'USB combo outlet', sub:'', hrs:0.75 },
+    { id:'dev-floor-box', label:'Floor box / poke-thru', sub:'Commercial', hrs:2.5 },
+    { id:'dev-disconnect', label:'Disconnect switch', sub:'AC, equipment', hrs:2 },
+  ],
+  lighting: [
+    { id:'lit-can-new', label:'Recessed can (new rough-in)', sub:'Per fixture', hrs:1.25 },
+    { id:'lit-can-retrofit', label:'Recessed can retrofit', sub:'Existing box, LED', hrs:0.75 },
+    { id:'lit-led-strip', label:'LED strip lighting (per zone)', sub:'Tape light w/ driver', hrs:2.5 },
+    { id:'lit-surface', label:'Surface mount fixture', sub:'Per fixture, new box', hrs:1.0 },
+    { id:'lit-pendant', label:'Pendant / chandelier', sub:'Per fixture', hrs:1.5 },
+    { id:'lit-exterior', label:'Exterior fixture', sub:'New box, weatherproof', hrs:1.25 },
+    { id:'lit-shop-highbay', label:'Shop high-bay fixture', sub:'Wire whip + hang', hrs:1.5 },
+    { id:'lit-linear', label:'Linear LED (per 4ft fixture)', sub:'Surface/suspend', hrs:1.25 },
+    { id:'lit-exit-em', label:'Exit / emergency light', sub:'', hrs:1.5 },
+    { id:'lit-occupancy', label:'Occupancy sensor / dimmer', sub:'', hrs:0.75 },
+    { id:'lit-circuit', label:'Lighting circuit (dedicated)', sub:'Switch leg included', hrs:2.5 },
+  ],
+  specialty: [
+    { id:'sp-smoke-co', label:'Smoke / CO detector', sub:'', hrs:0.75 },
+    { id:'sp-exhaust-fan', label:'Exhaust fan + duct', sub:'Bath or kitchen', hrs:3.5 },
+    { id:'sp-range-hood', label:'Range hood / microwave circuit', sub:'', hrs:2 },
+    { id:'sp-dishwasher', label:'Dishwasher circuit', sub:'New from panel', hrs:2.5 },
+    { id:'sp-disposal', label:'Garbage disposal circuit', sub:'', hrs:2 },
+    { id:'sp-fridge', label:'Refrigerator circuit', sub:'', hrs:2 },
+    { id:'sp-water-heater', label:'Water heater circuit', sub:'240V / 30A', hrs:3 },
+    { id:'sp-hot-tub', label:'Hot tub / spa circuit', sub:'240V GFCI, 50A', hrs:5 },
+    { id:'sp-under-cab', label:'Under-cabinet lighting', sub:'Per zone', hrs:3 },
+    { id:'sp-data', label:'Low-voltage / data drop', sub:'Cat6 per drop', hrs:1 },
+    { id:'sp-security', label:'Security camera / intercom', sub:'Per device, low-v', hrs:1.5 },
+    { id:'sp-motor', label:'Motor / equipment hookup', sub:'3-phase or 240V', hrs:3 },
+  ]
+};
+
+const flagsDB = [
+  { id:'fl-unknown-wiring', label:'Unknown wiring in walls', sub:'Add 2–4 hrs troubleshoot allowance', addHrs:[2,4] },
+  { id:'fl-knob-tube', label:'Knob & tube or aluminum wiring', sub:'Significant remediation risk', addHrs:[4,10] },
+  { id:'fl-permit', label:'Permit required', sub:'File permit, inspection coordination', addHrs:[2,3] },
+  { id:'fl-demo', label:'Demo / patching by others', sub:'Coordinate with GC', addHrs:[0,0] },
+  { id:'fl-confined', label:'Confined space / attic work', sub:'Add 20–30% labor buffer', addHrs:[2,6] },
+  { id:'fl-asbestos', label:'Potential asbestos / hazmat', sub:'Stop work if disturbed — note location', addHrs:[0,0] },
+  { id:'fl-distance', label:'Long runs / large building', sub:'Add wire + conduit footage', addHrs:[2,5] },
+  { id:'fl-schedule', label:'Phased schedule / coordination', sub:'Multiple mobilizations', addHrs:[3,6] },
+  { id:'fl-tight-access', label:'Extremely tight access', sub:'Narrow crawl, finished ceilings', addHrs:[2,5] },
+  { id:'fl-customer-supplied', label:'Customer-supplied fixtures/materials', sub:'Note: verify specs before scheduling', addHrs:[0,0] },
+  { id:'fl-temp-power', label:'Temp power / phased energization', sub:'', addHrs:[2,4] },
+  { id:'fl-inspection-backlog', label:'Inspection backlog in this AHJ', sub:'Note for scheduling', addHrs:[0,0] },
+];
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function goTo(step) {
+  document.querySelectorAll('.section').forEach((s,i) => {
+    s.classList.toggle('active', i === step);
+  });
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.toggle('active', i === step);
+  });
+  currentStep = step;
+  window.scrollTo(0, 0);
+  if (step === 2) renderScope();
+  if (step === 3) renderFlags();
+}
+
+// ─── JOB TYPE ─────────────────────────────────────────────────────────────────
+function selectJobType(el, type) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedJobType = type;
+}
+
+// ─── CONDITIONS ───────────────────────────────────────────────────────────────
+function setCond(btn, key, val) {
+  const group = btn.closest('.btn-group');
+  group.querySelectorAll('.cond-btn').forEach(b => {
+    b.classList.remove('sel-good','sel-warn','sel-bad');
+  });
+  const cls = val === 'good' ? 'sel-good' : val === 'warn' ? 'sel-warn' : 'sel-bad';
+  btn.classList.add(cls);
+  conditions[key] = val;
+}
+
+// ─── SCOPE RENDER ─────────────────────────────────────────────────────────────
+function renderScope() {
+  renderScopeGroup('scope-service', scopeDB.service);
+  renderScopeGroup('scope-circuits', scopeDB.circuits);
+  renderScopeGroup('scope-devices', scopeDB.devices);
+  renderScopeGroup('scope-lighting', scopeDB.lighting);
+  renderScopeGroup('scope-specialty', scopeDB.specialty);
+}
+
+function renderScopeGroup(containerId, items) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map(item => `
+    <div class="scope-item">
+      <div class="scope-check ${scopeQtys[item.id] > 0 ? 'checked' : ''}" onclick="toggleScope('${item.id}', ${item.hrs})" id="chk-${item.id}"></div>
+      <div class="scope-name">${item.label}${item.sub ? `<small>${item.sub}</small>` : ''}</div>
+      <div class="qty-wrap">
+        <button class="qty-btn" onclick="changeQty('${item.id}', ${item.hrs}, -1)">−</button>
+        <div class="qty-val" id="qty-${item.id}">${scopeQtys[item.id] || 0}</div>
+        <button class="qty-btn" onclick="changeQty('${item.id}', ${item.hrs}, 1)">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleScope(id, hrs) {
+  const cur = scopeQtys[id] || 0;
+  scopeQtys[id] = cur > 0 ? 0 : 1;
+  updateScopeUI(id);
+}
+
+function changeQty(id, hrs, delta) {
+  const cur = scopeQtys[id] || 0;
+  scopeQtys[id] = Math.max(0, cur + delta);
+  updateScopeUI(id);
+}
+
+function updateScopeUI(id) {
+  const chk = document.getElementById('chk-' + id);
+  const qty = document.getElementById('qty-' + id);
+  if (chk) chk.classList.toggle('checked', scopeQtys[id] > 0);
+  if (qty) qty.textContent = scopeQtys[id] || 0;
+}
+
+// ─── CUSTOM ITEMS ─────────────────────────────────────────────────────────────
+function addCustomItem() {
+  const id = 'ci-' + Date.now();
+  customItems.push({ id, name: '', hrs: '' });
+  renderCustomItems();
+}
+
+function renderCustomItems() {
+  const el = document.getElementById('custom-items-list');
+  el.innerHTML = customItems.map(ci => `
+    <div class="custom-item-row" id="row-${ci.id}">
+      <input type="text" placeholder="Description" value="${ci.name}" oninput="updateCustom('${ci.id}','name',this.value)" style="flex:2">
+      <input type="text" placeholder="Hrs" value="${ci.hrs}" oninput="updateCustom('${ci.id}','hrs',this.value)" style="width:54px;flex:none">
+      <button class="remove-btn" onclick="removeCustom('${ci.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+function updateCustom(id, field, val) {
+  const item = customItems.find(c => c.id === id);
+  if (item) item[field] = val;
+}
+
+function removeCustom(id) {
+  customItems = customItems.filter(c => c.id !== id);
+  renderCustomItems();
+}
+
+// ─── FLAGS ────────────────────────────────────────────────────────────────────
+function renderFlags() {
+  const el = document.getElementById('flags-list');
+  el.innerHTML = flagsDB.map(f => `
+    <div class="flag-row">
+      <div class="flag-toggle ${flags[f.id] ? 'on' : ''}" onclick="toggleFlag('${f.id}', this)" id="ftog-${f.id}"></div>
+      <div class="flag-info">
+        <div class="flag-label">${f.label}</div>
+        <div class="flag-sub">${f.sub}</div>
+        <div class="flag-note ${flags[f.id] ? 'show' : ''}" id="fnote-${f.id}">
+          <input type="text" placeholder="Note / detail..." value="${flags[f.id]?.note || ''}" oninput="updateFlagNote('${f.id}', this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleFlag(id, el) {
+  if (flags[id]) {
+    delete flags[id];
+    el.classList.remove('on');
+    document.getElementById('fnote-' + id)?.classList.remove('show');
+  } else {
+    flags[id] = { note: '' };
+    el.classList.add('on');
+    document.getElementById('fnote-' + id)?.classList.add('show');
+  }
+}
+
+function updateFlagNote(id, val) {
+  if (flags[id]) flags[id].note = val;
+}
+
+// ─── GENERATE SUMMARY ─────────────────────────────────────────────────────────
+function generateSummary() {
+  const name = document.getElementById('cust-name').value || 'Unknown Customer';
+  const addr = document.getElementById('cust-addr').value || 'Address TBD';
+  const date = document.getElementById('walk-date').value || 'Date TBD';
+  const desc = document.getElementById('cust-description').value || '';
+  const svcSize = document.getElementById('svc-size').value || '—';
+  const bldgAge = document.getElementById('bldg-age').value || '—';
+  const siteNotes = document.getElementById('site-notes').value || '';
+  const fieldNotes = document.getElementById('field-notes').value || '';
+  const photoNotes = document.getElementById('photo-notes').value || '';
+  const jobTypeLabel = selectedJobType.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) || 'General';
+
+  // Build scope list
+  const allScope = [...scopeDB.service, ...scopeDB.circuits, ...scopeDB.devices, ...scopeDB.lighting, ...scopeDB.specialty];
+  const selectedScope = allScope.filter(s => scopeQtys[s.id] > 0);
+
+  // Hours calc
+  let minHrs = 0, maxHrs = 0;
+  selectedScope.forEach(s => {
+    const qty = scopeQtys[s.id];
+    minHrs += s.hrs * qty * 0.85;
+    maxHrs += s.hrs * qty * 1.2;
+  });
+  customItems.forEach(ci => {
+    const h = parseFloat(ci.hrs) || 0;
+    minHrs += h * 0.85;
+    maxHrs += h * 1.2;
+  });
+
+  // Flag hours
+  let flagMinAdd = 0, flagMaxAdd = 0;
+  const activeFlags = flagsDB.filter(f => flags[f.id]);
+  activeFlags.forEach(f => {
+    flagMinAdd += f.addHrs[0];
+    flagMaxAdd += f.addHrs[1];
+  });
+  minHrs += flagMinAdd;
+  maxHrs += flagMaxAdd;
+
+  // Condition modifiers
+  const badConds = Object.values(conditions).filter(v => v === 'bad').length;
+  const warnConds = Object.values(conditions).filter(v => v === 'warn').length;
+  maxHrs += badConds * 1.5 + warnConds * 0.75;
+
+  const minRnd = Math.round(minHrs * 2) / 2;
+  const maxRnd = Math.round(maxHrs * 2) / 2;
+
+  // Display estimate
+  const estEl = document.getElementById('est-range');
+  if (minRnd === 0 && maxRnd === 0) {
+    estEl.textContent = '— (no scope selected)';
+  } else {
+    estEl.innerHTML = `${minRnd}–${maxRnd} <span>hrs field labor</span>`;
+  }
+
+  // Breakdown
+  const bdEl = document.getElementById('est-breakdown');
+  const rate = 135;
+  const labMin = Math.round(minRnd * rate);
+  const labMax = Math.round(maxRnd * rate);
+  const matEst = Math.round((labMin + labMax) / 2 * 0.55);
+  const totalMin = labMin + Math.round(matEst * 0.85);
+  const totalMax = labMax + Math.round(matEst * 1.2);
+
+  bdEl.innerHTML = `
+    <div class="est-line"><span>Labor (@ $${rate}/hr)</span><strong>$${labMin.toLocaleString()}–$${labMax.toLocaleString()}</strong></div>
+    <div class="est-line"><span>Material est. (rough)</span><strong>~$${matEst.toLocaleString()}</strong></div>
+    <div class="est-line"><span>Ballpark total range</span><strong>$${totalMin.toLocaleString()}–$${totalMax.toLocaleString()}</strong></div>
+    <div class="est-line"><span style="font-size:10px;color:var(--muted)">Rough starting point only — verify material costs</span><span></span></div>
+  `;
+
+  // Condition summary
+  const condSummary = [];
+  const condMap = { panel:'Panel', slots:'Breaker slots', ground:'Grounding', access:'Wall access', attic:'Attic/crawl', wiring:'Existing wiring' };
+  Object.entries(conditions).forEach(([k,v]) => {
+    condSummary.push(`${condMap[k]||k}: ${v}`);
+  });
+
+  // Field Summary text
+  const scopeLines = selectedScope.map(s => `  • ${s.label} × ${scopeQtys[s.id]}`).join('\n');
+  const customLines = customItems.filter(c => c.name).map(c => `  • ${c.name}${c.hrs ? ` (${c.hrs} hrs)` : ''}`).join('\n');
+  const flagLines = activeFlags.map(f => `  ⚠ ${f.label}${flags[f.id]?.note ? ': ' + flags[f.id].note : ''}`).join('\n');
+
+  const summary = `MARROW ELECTRIC — JOB WALK NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer: ${name}
+Location: ${addr}
+Date:     ${date}
+Type:     ${jobTypeLabel}
+
+OVERVIEW:
+${desc || '(none entered)'}
+
+SERVICE & SITE:
+  Service size: ${svcSize}
+  Building age: ${bldgAge}
+${condSummary.map(c => '  ' + c).join('\n')}
+${siteNotes ? '\nSite notes: ' + siteNotes : ''}
+
+SCOPE ITEMS:
+${scopeLines || '  (none selected)'}
+${customLines ? '\n' + customLines : ''}
+
+RISK FLAGS:
+${flagLines || '  None flagged'}
+
+FIELD ESTIMATE:
+  Labor hours: ${minRnd}–${maxRnd} hrs
+  Ballpark total: $${totalMin.toLocaleString()}–$${totalMax.toLocaleString()}
+  (rates @ $${rate}/hr, rough material est.)
+
+${fieldNotes ? 'FIELD NOTES:\n' + fieldNotes : ''}
+${photoNotes ? '\nPHOTO LIST:\n' + photoNotes : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  document.getElementById('field-summary-text').textContent = summary;
+
+  // Estimate starting point
+  const estStart = `ESTIMATE STARTING POINT — ${name.toUpperCase()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCOPE BREAKDOWN (hrs @ $${rate}/man-hr):
+${selectedScope.map(s => {
+    const qty = scopeQtys[s.id];
+    const hrs = (s.hrs * qty).toFixed(1);
+    const cost = Math.round(s.hrs * qty * rate);
+    return `  ${s.label} × ${qty}  →  ${hrs} hrs  ($${cost.toLocaleString()})`;
+  }).join('\n')}
+${customItems.filter(c=>c.name).map(c => {
+    const h = parseFloat(c.hrs)||0;
+    return `  ${c.name} → ${h} hrs  ($${Math.round(h*rate).toLocaleString()})`;
+  }).join('\n')}
+
+${flagMinAdd > 0 || flagMaxAdd > 0 ? `RISK / COMPLEXITY BUFFER:
+  Flagged items add: ${flagMinAdd}–${flagMaxAdd} hrs  ($${Math.round(flagMinAdd*rate).toLocaleString()}–$${Math.round(flagMaxAdd*rate).toLocaleString()})` : ''}
+
+TOTALS:
+  Field labor:  ${minRnd}–${maxRnd} hrs
+  Labor $:      $${labMin.toLocaleString()}–$${labMax.toLocaleString()}
+  Material est: ~$${matEst.toLocaleString()} (verify pricing)
+  ─────────────────────────────
+  BALLPARK:     $${totalMin.toLocaleString()}–$${totalMax.toLocaleString()}
+
+Next steps:
+  □ Pull material pricing from supplier
+  □ Confirm panel/service adequacy
+  □ Check permit requirements (${selectedJobType})
+  □ Build formal proposal in estimating workbook
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  document.getElementById('estimate-start-text').textContent = estStart;
+}
+
+// ─── COPY ─────────────────────────────────────────────────────────────────────
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+function resetForm() {
+  if (!confirm('Start a new job walk? Current data will be cleared.')) return;
+  document.getElementById('cust-name').value = '';
+  document.getElementById('cust-addr').value = '';
+  document.getElementById('walk-date').value = '';
+  document.getElementById('cust-description').value = '';
+  document.getElementById('svc-size').value = '';
+  document.getElementById('bldg-age').value = '';
+  document.getElementById('site-notes').value = '';
+  document.getElementById('field-notes').value = '';
+  document.getElementById('photo-notes').value = '';
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+  document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('sel-good','sel-warn','sel-bad'));
+  selectedJobType = '';
+  conditions = {};
+  scopeQtys = {};
+  customItems = [];
+  flags = {};
+  goTo(0);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('walk-date').value = new Date().toISOString().split('T')[0];
+renderScope();
+renderFlags();
+</script>
+</body>
+</html>
